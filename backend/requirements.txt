@@ -2,6 +2,7 @@ fastapi[standard]
 fastapi_nextauth_jwt
 pydantic
 sqlalchemy
+asyncpg
 psycopg2-binary
 python-dotenv
 python-multipart
