@@ -1,5 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Noto_Sans } from "next/font/google";
+import { cn } from "@/lib/utils";
+
+const notoSans = Noto_Sans({subsets:['latin'],variable:'--font-sans'});
 
 export const metadata: Metadata = {
   title: "Lumen Portugal Navigation",
@@ -12,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="pt" className="h-full antialiased">
+    <html lang="pt" className={cn("h-full antialiased", "font-sans", notoSans.variable)}>
       <body className="min-h-full overflow-hidden bg-black">{children}</body>
     </html>
   );
