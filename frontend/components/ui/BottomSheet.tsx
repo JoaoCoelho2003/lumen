@@ -24,7 +24,6 @@ type BottomSheetProps = {
   distanceRemaining: number;
   durationRemaining: number;
   activeStepIndex: number;
-  onExpandSearch: () => void;
   onToggleExpanded: () => void;
   onProfileChange: (profile: TravelProfile) => void;
   onStartJourney: () => void;
@@ -50,28 +49,13 @@ export function BottomSheet({
   distanceRemaining,
   durationRemaining,
   activeStepIndex,
-  onExpandSearch,
   onToggleExpanded,
   onProfileChange,
   onStartJourney,
   onStopNavigation,
 }: BottomSheetProps) {
   if (state === "idle") {
-    return (
-      <div className="pointer-events-none fixed inset-x-0 bottom-4 z-30 flex justify-center px-4">
-        <button
-          type="button"
-          onClick={onExpandSearch}
-          className="pointer-events-auto flex min-h-14 w-full max-w-md items-center justify-center gap-2 rounded-full border border-white/10 bg-[#0f1117]/95 px-5 text-sm font-semibold text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out hover:border-white/20"
-        >
-          <span className="relative flex h-3 w-3">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75" />
-            <span className="relative inline-flex h-3 w-3 rounded-full bg-blue-500" />
-          </span>
-          Where do you want to go?
-        </button>
-      </div>
-    );
+    return null;
   }
 
   if (state === "navigating") {
