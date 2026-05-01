@@ -60,7 +60,7 @@ input {
 
 .mapboxgl-ctrl-bottom-left,
 .mapboxgl-ctrl-bottom-right {
-  margin-bottom: 5.5rem;
+  margin-bottom: 0.25rem !important;
 }
 
 :root {
