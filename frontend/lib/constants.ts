@@ -3,14 +3,14 @@ import type { LngLatBoundsLike } from "mapbox-gl";
 export const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
 export const PORTUGAL_BOUNDS: LngLatBoundsLike = [
-  [-9.5, 36.8],
-  [-6.2, 42.2],
+  [-11.2, 35.2],
+  [-4.8, 43.8],
 ];
 
 export const DEFAULT_VIEW_STATE = {
   longitude: -8.2,
   latitude: 39.5,
-  zoom: 6.5,
+  zoom: 6.1,
   pitch: 0,
   bearing: 0,
 };

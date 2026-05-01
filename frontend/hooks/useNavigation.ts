@@ -25,7 +25,7 @@ type NavigationHook = {
   isNavigating: boolean;
   isFinished: boolean;
   error: string | null;
-  startNavigation: () => void;
+  startNavigation: (initialCoordinates?: Coordinates) => void;
   stopNavigation: () => void;
   cameraTarget: CameraTarget | null;
 };
@@ -64,7 +64,7 @@ export function useNavigation(route: Route | null): NavigationHook {
     previousCoordinatesRef.current = null;
   }, [clearPositionWatch]);
 
-  const startNavigation = useCallback(() => {
+  const startNavigation = useCallback((initialCoordinates?: Coordinates) => {
     if (!route || route.geometry.coordinates.length === 0) {
       return;
     }
@@ -84,6 +84,27 @@ export function useNavigation(route: Route | null): NavigationHook {
     setError(null);
     setIsFinished(false);
     setIsNavigating(true);
+
+    if (initialCoordinates) {
+      const initialDistanceTravelled = Math.min(
+        routeDistance,
+        findDistanceAlongRoute(route.geometry.coordinates, initialCoordinates),
+      );
+      const initialBearing = getBearingAtDistance(
+        route.geometry.coordinates,
+        initialDistanceTravelled,
+      );
+      const initialStepIndex = findClosestStepIndex(route.steps, initialCoordinates);
+
+      previousCoordinatesRef.current = initialCoordinates;
+      setDistanceTravelled(initialDistanceTravelled);
+      setPosition({
+        coordinates: initialCoordinates,
+        bearing: initialBearing,
+        stepIndex: initialStepIndex,
+        distanceTravelled: initialDistanceTravelled,
+      });
+    }
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (gpsPosition) => {
