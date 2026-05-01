@@ -56,7 +56,6 @@ export function SafeRouteMap() {
   const [destinationLabel, setDestinationLabel] = useState("");
   const [profile, setProfile] = useState<TravelProfile>("driving");
   const [sheetState, setSheetState] = useState<NavigationState>("idle");
-  const [isSearchExpanded, setIsSearchExpanded] = useState(false);
   const [isNavigationSheetExpanded, setIsNavigationSheetExpanded] = useState(false);
   const [satelliteEnabled, setSatelliteEnabled] = useState(false);
   const [heatmapEnabled, setHeatmapEnabled] = useState(false);
@@ -116,7 +115,7 @@ export function SafeRouteMap() {
       ],
       {
         padding: {
-          top: isSearchExpanded ? 180 : 110,
+          top: 110,
           right: 80,
           bottom: 220,
           left: 80,
@@ -126,7 +125,7 @@ export function SafeRouteMap() {
     );
 
     return () => window.clearTimeout(focusReset);
-  }, [activeRoute, isSearchExpanded]);
+  }, [activeRoute]);
 
   useEffect(() => {
     if (!navigation.cameraTarget || !mapRef.current || !isFocusedOnUser) {
@@ -165,7 +164,6 @@ export function SafeRouteMap() {
   function handleDestinationSelect(result: GeocodingResult) {
     setDestination(result.center);
     setDestinationLabel(result.place_name);
-    setIsSearchExpanded(true);
   }
 
   function handleStartJourney() {
@@ -188,7 +186,6 @@ export function SafeRouteMap() {
     });
     setIsFocusedOnUser(true);
     setSheetState("navigating");
-    setIsSearchExpanded(false);
     setIsNavigationSheetExpanded(false);
     navigation.startNavigation(startCoordinates);
   }
@@ -262,7 +259,6 @@ export function SafeRouteMap() {
 
     navigation.stopNavigation();
     setSheetState("idle");
-    setIsSearchExpanded(false);
     setIsNavigationSheetExpanded(false);
     setDestination(null);
     setDestinationLabel("");
@@ -313,11 +309,12 @@ export function SafeRouteMap() {
         </div>
       ) : null}
 
-      {sheetState !== "navigating" && isSearchExpanded ? (
-        <div className="pointer-events-none fixed inset-x-0 top-4 z-40 px-3">
+      {sheetState === "idle" ? (
+        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 px-3">
           <div className="pointer-events-auto mx-auto max-w-2xl">
             <SearchBar
               destinationLabel={destinationLabel}
+              error={routeError}
               onDestinationLabelChange={setDestinationLabel}
               onDestinationSelect={handleDestinationSelect}
               onDestinationCoordinatesChange={setDestination}
@@ -372,10 +369,6 @@ export function SafeRouteMap() {
         distanceRemaining={navigation.distanceRemaining}
         durationRemaining={durationRemaining}
         activeStepIndex={navigation.stepIndex}
-        onExpandSearch={() => {
-          setIsSearchExpanded(true);
-          setSheetState(activeRoute ? "preview" : "idle");
-        }}
         onToggleExpanded={() => setIsNavigationSheetExpanded((expanded) => !expanded)}
         onProfileChange={setProfile}
         onStartJourney={handleStartJourney}

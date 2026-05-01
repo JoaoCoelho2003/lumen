@@ -7,6 +7,7 @@ import type { Coordinates, GeocodingResult } from "@/lib/types";
 
 type SearchBarProps = {
   destinationLabel: string;
+  error?: string | null;
   onDestinationLabelChange: (value: string) => void;
   onDestinationSelect: (result: GeocodingResult) => void;
   onDestinationCoordinatesChange: (coordinates: Coordinates | null) => void;
@@ -14,6 +15,7 @@ type SearchBarProps = {
 
 export function SearchBar({
   destinationLabel,
+  error,
   onDestinationLabelChange,
   onDestinationSelect,
   onDestinationCoordinatesChange,
@@ -27,9 +29,9 @@ export function SearchBar({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="relative">
-        <div className="rounded-2xl border border-white/10 bg-[#0f1117]/95 p-3 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out">
+        <div className="rounded-2xl border border-white/10 bg-[#0f1117]/95 p-2 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out">
           <label className="flex min-h-12 items-center gap-3 rounded-xl bg-white/5 px-3">
             <Search className="h-5 w-5 shrink-0 text-blue-400" />
             <input
@@ -61,7 +63,7 @@ export function SearchBar({
 
         {isFocused &&
         (destinationSearch.suggestions.length > 0 || destinationSearch.isLoading) ? (
-          <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-40 overflow-hidden rounded-2xl border border-white/10 bg-[#0f1117]/95 shadow-2xl backdrop-blur-md">
+          <div className="absolute bottom-[calc(100%+0.5rem)] left-0 right-0 z-40 max-h-[42vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0f1117]/95 shadow-2xl backdrop-blur-md">
             {destinationSearch.isLoading ? (
               <div className="flex items-center gap-2 px-4 py-3 text-sm text-slate-300">
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -88,9 +90,9 @@ export function SearchBar({
         ) : null}
       </div>
 
-      {destinationSearch.error ? (
+      {destinationSearch.error || error ? (
         <p className="rounded-xl border border-red-400/30 bg-red-950/60 px-3 py-2 text-xs text-red-100">
-          {destinationSearch.error}
+          {destinationSearch.error ?? error}
         </p>
       ) : null}
     </div>
