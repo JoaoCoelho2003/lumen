@@ -26,10 +26,9 @@ import type {
 } from "@/lib/types";
 import { MarkerLayer } from "@/components/map/MarkerLayer";
 import { RouteLayer } from "@/components/map/RouteLayer";
-import { BottomSheet } from "@/components/ui/BottomSheet";
 import { LayerToggles } from "@/components/ui/LayerToggles";
+import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
 import { NavigationBar } from "@/components/ui/NavigationBar";
-import { SearchBar } from "@/components/ui/SearchBar";
 
 function getPortugalHour() {
   const hour = new Intl.DateTimeFormat("en-GB", {
@@ -56,7 +55,6 @@ export function SafeRouteMap() {
   const [destinationLabel, setDestinationLabel] = useState("");
   const [profile, setProfile] = useState<TravelProfile>("driving");
   const [sheetState, setSheetState] = useState<NavigationState>("idle");
-  const [isNavigationSheetExpanded, setIsNavigationSheetExpanded] = useState(false);
   const [satelliteEnabled, setSatelliteEnabled] = useState(false);
   const [heatmapEnabled, setHeatmapEnabled] = useState(false);
   const [lightingEnabled, setLightingEnabled] = useState(false);
@@ -186,7 +184,6 @@ export function SafeRouteMap() {
     });
     setIsFocusedOnUser(true);
     setSheetState("navigating");
-    setIsNavigationSheetExpanded(false);
     navigation.startNavigation(startCoordinates);
   }
 
@@ -259,7 +256,6 @@ export function SafeRouteMap() {
 
     navigation.stopNavigation();
     setSheetState("idle");
-    setIsNavigationSheetExpanded(false);
     setDestination(null);
     setDestinationLabel("");
 
@@ -309,20 +305,6 @@ export function SafeRouteMap() {
         </div>
       ) : null}
 
-      {sheetState === "idle" ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 px-3">
-          <div className="pointer-events-auto mx-auto max-w-2xl">
-            <SearchBar
-              destinationLabel={destinationLabel}
-              error={routeError}
-              onDestinationLabelChange={setDestinationLabel}
-              onDestinationSelect={handleDestinationSelect}
-              onDestinationCoordinatesChange={setDestination}
-            />
-          </div>
-        </div>
-      ) : null}
-
       {!isFocusedOnUser ? (
         <button
           type="button"
@@ -358,18 +340,20 @@ export function SafeRouteMap() {
         onLightingToggle={() => setLightingEnabled((enabled) => !enabled)}
       />
 
-      <BottomSheet
+      <MapBottomDrawer
         state={sheetState}
         route={activeRoute}
         destinationName={destinationLabel}
+        destinationLabel={destinationLabel}
         profile={profile}
         isLoadingRoute={isLoading}
         error={routeError}
-        isExpanded={isNavigationSheetExpanded}
         distanceRemaining={navigation.distanceRemaining}
         durationRemaining={durationRemaining}
         activeStepIndex={navigation.stepIndex}
-        onToggleExpanded={() => setIsNavigationSheetExpanded((expanded) => !expanded)}
+        onDestinationLabelChange={setDestinationLabel}
+        onDestinationSelect={handleDestinationSelect}
+        onDestinationCoordinatesChange={setDestination}
         onProfileChange={setProfile}
         onStartJourney={handleStartJourney}
         onStopNavigation={handleStopNavigation}
