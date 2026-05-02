@@ -23,13 +23,13 @@ async function proxyRequest(request: NextRequest, path: string[]) {
   headers.delete("content-length");
 
   const hasBody = !["GET", "HEAD"].includes(method);
+  const body = hasBody ? await request.text() : undefined;
 
   const response = await fetch(targetUrl, {
     method,
     headers,
-    body: hasBody ? request.body : undefined,
-    duplex: hasBody ? "half" : undefined,
-  } as RequestInit & { duplex?: "half" });
+    body: body && body.length > 0 ? body : undefined,
+  });
 
   return new NextResponse(response.body, {
     status: response.status,

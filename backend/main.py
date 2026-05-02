@@ -10,9 +10,9 @@ from backend.api.pins import router as pins_router
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
-from backend.backend.backend.utils.security import NextAuthJWT
-from backend.backend.core.database import engine, Base
-from backend.backend.db.models import *
+from backend.utils.security import NextAuthJWT
+from backend.core.database import engine, Base
+from backend.db.models import *
 from backend.api.routes import router as routes_router
 
 load_dotenv()

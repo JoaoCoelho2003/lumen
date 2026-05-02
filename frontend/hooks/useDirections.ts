@@ -172,7 +172,7 @@ export function useDirections(
           ranked.ranked_routes[0]?.source_route_index ??
           0;
 
-        setRankedRoutes(ranked.ranked_routes.slice(0, 3));
+        setRankedRoutes(ranked.ranked_routes.slice(0, 10));
 
         setSelectedRouteIndex(nextSelectedIndex);
 

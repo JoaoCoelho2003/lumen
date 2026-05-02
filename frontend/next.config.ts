@@ -22,7 +22,7 @@ const nextConfig: NextConfig = {
         "10.209.233.116",
         "jayleen-hydrometrical-uncavalierly.ngrok-free.dev",
         "unsturdy-margarett-promising.ngrok-free.dev",
-        "vlpps-161-230-56-29.run.pinggy-free.link"
+        "uincz-161-230-56-29.run.pinggy-free.link"
     ],
     async rewrites() {
         return [

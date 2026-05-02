@@ -4,7 +4,7 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 
 import { Crosshair, LightbulbOff, Loader2, TriangleAlert } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Map, { type MapRef } from "react-map-gl";
 import { useSession } from "next-auth/react";
 import { useDirections } from "../../hooks/useDirections";
@@ -62,10 +62,6 @@ function getTimeBasedMapStyle(hour: number) {
   }
 
   return MAP_STYLES.dark;
-}
-
-function coordinatesMatch(first: Coordinates, second: Coordinates) {
-  return first[0] === second[0] && first[1] === second[1];
 }
 
 const SAFE_SPOT_MARKER_MIN_ZOOM = 13;
@@ -136,14 +132,7 @@ export function SafeRouteMap() {
   );
   const { safeSpots, isLoadingSafeSpots, safeSpotsError, findSafeSpots } =
     useSafeSpots();
-  const activeRoute =
-    origin &&
-    destination &&
-    route &&
-    coordinatesMatch(route.origin, origin) &&
-    coordinatesMatch(route.destination, destination)
-      ? route
-      : null;
+  const activeRoute = origin && destination && route ? route : null;
   const navigation = useNavigation(activeRoute, profile);
   const metricsOptions = {
     performanceMetricsCollection: false,
@@ -151,17 +140,7 @@ export function SafeRouteMap() {
   const mapStyle = satelliteEnabled
     ? MAP_STYLES.satellite
     : getTimeBasedMapStyle(portugalHour);
-  const activeStep = activeRoute?.steps[navigation.stepIndex] ?? null;
-  const distanceToNextManeuver = useMemo(() => {
-    if (!activeStep || !navigation.position) {
-      return 0;
-    }
-
-    return calculateDistance(
-      navigation.position.coordinates,
-      activeStep.maneuver.location,
-    );
-  }, [activeStep, navigation.position]);
+  
   const durationRemaining = activeRoute
     ? (navigation.distanceRemaining / Math.max(activeRoute.distance, 1)) *
       activeRoute.duration
