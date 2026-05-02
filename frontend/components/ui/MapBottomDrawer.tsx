@@ -208,7 +208,6 @@ type RoutePanelProps = {
   route: Route | null;
   rankedRoutes: RankedRoute[];
   selectedRouteIndex: number | null;
-  activeStepIndex: number;
   onSelectRoute: (index: number) => void;
 };
 
@@ -216,7 +215,6 @@ function RoutePanel({
   route,
   rankedRoutes,
   selectedRouteIndex,
-  activeStepIndex,
   onSelectRoute,
 }: RoutePanelProps) {
   const selectedCandidate =
@@ -224,7 +222,6 @@ function RoutePanel({
       (candidate, index) =>
         (candidate.source_route_index ?? index) === selectedRouteIndex,
     ) ?? rankedRoutes[0];
-  const remainingSteps = route?.steps.slice(activeStepIndex) ?? [];
 
   return (
     <div className="space-y-4 px-1 py-1">
@@ -327,31 +324,44 @@ function RoutePanel({
         </div>
       ) : null}
 
+    </div>
+  );
+}
+
+type DirectionsPanelProps = {
+  route: Route | null;
+  activeStepIndex: number;
+};
+
+function DirectionsPanel({ route, activeStepIndex }: DirectionsPanelProps) {
+  const remainingSteps = route?.steps.slice(activeStepIndex) ?? [];
+
+  return (
+    <div className="space-y-1 px-1 py-1">
       {remainingSteps.length > 0 ? (
-        <div className="space-y-1">
-          <p className="px-1 text-xs font-semibold uppercase text-muted-foreground">
-            Directions
-          </p>
-          {remainingSteps.map((step, index) => (
-            <div
-              key={`${step.instruction}-${index}`}
-              className="flex items-start gap-3 border-b border-border/40 py-3 last:border-0"
-            >
-              <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/60 text-primary">
-                <ManeuverIcon type={step.maneuver.type} />
-              </span>
-              <div className="min-w-0">
-                <p className="text-sm font-medium text-foreground">
-                  {step.instruction}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {formatDistance(step.distance)} · {formatDuration(step.duration)}
-                </p>
-              </div>
+        remainingSteps.map((step, index) => (
+          <div
+            key={`${step.instruction}-${index}`}
+            className="flex items-start gap-3 border-b border-border/40 py-3 last:border-0"
+          >
+            <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/60 text-primary">
+              <ManeuverIcon type={step.maneuver.type} />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium text-foreground">
+                {step.instruction}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                {formatDistance(step.distance)} · {formatDuration(step.duration)}
+              </p>
             </div>
-          ))}
+          </div>
+        ))
+      ) : (
+        <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-6 text-sm text-muted-foreground">
+          Directions will appear after a route is calculated.
         </div>
-      ) : null}
+      )}
     </div>
   );
 }
@@ -617,7 +627,7 @@ export function MapBottomDrawer({
                 >
                   <TabsList variant="line" className="w-full shrink-0">
                     <TabsTrigger value="route">Route</TabsTrigger>
-                    <TabsTrigger value="settings">Settings</TabsTrigger>
+                    <TabsTrigger value="directions">Directions</TabsTrigger>
                   </TabsList>
                   <TabsContent
                     value="route"
@@ -627,25 +637,16 @@ export function MapBottomDrawer({
                       route={route}
                       rankedRoutes={rankedRoutes}
                       selectedRouteIndex={selectedRouteIndex}
-                      activeStepIndex={activeStepIndex}
                       onSelectRoute={onSelectRoute}
                     />
                   </TabsContent>
                   <TabsContent
-                    value="settings"
+                    value="directions"
                     className="mt-3 min-h-0 flex-1 overflow-y-auto pr-1"
                   >
-                    <SettingsPanel
-                      weights={weights}
-                      isWeightsLoading={isWeightsLoading}
-                      isWeightsSaving={isWeightsSaving}
-                      weightsError={weightsError}
-                      hasPendingWeightChanges={hasPendingWeightChanges}
-                      safeSpotsEnabled={safeSpotsEnabled}
-                      onSafeSpotsEnabledChange={onSafeSpotsEnabledChange}
-                      onLightWeightChange={onLightWeightChange}
-                      onCrimeWeightChange={onCrimeWeightChange}
-                      onSaveWeights={onSaveWeights}
+                    <DirectionsPanel
+                      route={route}
+                      activeStepIndex={activeStepIndex}
                     />
                   </TabsContent>
                 </Tabs>
