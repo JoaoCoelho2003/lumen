@@ -42,7 +42,6 @@ class PinCreate(BaseModel):
 @router.get("", include_in_schema=False)
 @router.get("/")
 async def get_pins(db: AsyncSession = Depends(get_db)):
-    await _ensure_pins_table()
     result = await db.execute(select(Pin).order_by(Pin.created_at.desc()))
     return [pin_to_dict(p) for p in result.scalars().all()]
 

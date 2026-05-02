@@ -7,6 +7,7 @@ from backend.api.auth import router as auth_router
 from backend.api.health import router as health_router
 from backend.api.map_data import router as map_data_router
 from backend.api.pins import router as pins_router
+from backend.api.routes import router as routes_router
 from backend.core.config import FRONTEND_ORIGINS
 from backend.core.database import init_db
 from backend.services.lighting import load_lamp_coords

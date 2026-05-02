@@ -17,7 +17,7 @@ export default function Providers({
       <QueryClientProvider client={queryClient}>
         {children}
 
-      <ReactQueryDevtools initialIsOpen={false} buttonPosition={"top-right"} />
+      <ReactQueryDevtools initialIsOpen={false} buttonPosition={"top-left"} />
       </QueryClientProvider>
     </SessionProvider>
   );
