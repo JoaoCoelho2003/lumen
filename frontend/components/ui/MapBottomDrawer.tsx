@@ -454,6 +454,7 @@ export function MapBottomDrawer({
   return (
     <Drawer
       open
+      autoFocus={false}
       modal={false}
       dismissible={false}
       repositionInputs={false}
@@ -470,7 +471,8 @@ export function MapBottomDrawer({
     >
       <DrawerContent
         showOverlay={false}
-        className="z-40 mx-auto h-[100dvh] max-h-[100dvh] max-w-3xl rounded-t-2xl border-x border-t border-border/60 bg-card/95 p-0 text-foreground shadow-2xl backdrop-blur-md before:hidden sm:inset-x-4 sm:bottom-4 sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:border"
+        onOpenAutoFocus={(event) => event.preventDefault()}
+        className="z-40 mx-auto h-[100dvh] max-h-[100dvh] max-w-3xl rounded-t-2xl border-x border-t border-border/60 bg-card/95 p-0 text-foreground shadow-2xl outline-none backdrop-blur-md before:hidden focus:outline-none focus-visible:outline-none sm:inset-x-4 sm:bottom-4 sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:border"
       >
         <DrawerTitle className="sr-only">Route controls</DrawerTitle>
         <DrawerDescription className="sr-only">
