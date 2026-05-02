@@ -28,7 +28,10 @@ export default function Dashboard() {
         title="You are not logged in"
         description="Log in to access your saved safe-route dashboard and account tools."
         footer={
-          <Link href="/login" className="text-sm font-medium text-emerald-300 hover:text-emerald-200">
+          <Link
+            href="/login"
+            className="text-sm font-medium text-emerald-300 hover:text-emerald-200"
+          >
             Go to login
           </Link>
         }
@@ -57,11 +60,14 @@ export default function Dashboard() {
     >
       <div className="space-y-3">
         <div className="rounded-2xl border border-emerald-400/20 bg-emerald-400/10 px-4 py-3 text-sm text-emerald-100">
-          Signed in as <span className="font-medium">{session.user?.name || session.user?.email}</span>
+          Signed in as{" "}
+          <span className="font-medium">
+            {session.user?.name || session.user?.email}
+          </span>
         </div>
         <p className="text-sm leading-7 text-slate-300">
-          This page is now styled like the rest of the app and can be expanded with
-          route preferences, bookmarked places, and map tools.
+          This page is now styled like the rest of the app and can be expanded
+          with route preferences, bookmarked places, and map tools.
         </p>
       </div>
     </AuthPageShell>
