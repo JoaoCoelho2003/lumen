@@ -93,3 +93,14 @@ export type MapboxDirectionsResponse = {
   message?: string;
   code?: string;
 };
+
+export type PinType = "dangerous-area" | "low-light";
+
+export type Pin = {
+  id: string;
+  latitude: number;
+  longitude: number;
+  pin_type: PinType;
+  user_id?: string;
+  created_at?: string;
+};
