@@ -45,6 +45,7 @@ import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
 import { NavigationBar } from "@/components/ui/NavigationBar";
 import { PinTags } from "@/components/ui/PinTags";
 import { RightSideDrawer } from "@/components/ui/RightSideDrawer";
+import { UserMenu } from "@/components/ui/UserMenu";
 
 function getPortugalHour() {
   const hour = new Intl.DateTimeFormat("en-GB", {
@@ -69,6 +70,7 @@ function coordinatesMatch(first: Coordinates, second: Coordinates) {
 }
 
 const SAFE_SPOT_MARKER_MIN_ZOOM = 13;
+const PIN_MARKER_MIN_ZOOM = 13;
 const FAST_LOCATION_OPTIONS: PositionOptions = {
   enableHighAccuracy: false,
   timeout: 3_000,
@@ -96,7 +98,7 @@ export function SafeRouteMap() {
   const [locationError, setLocationError] = useState<string | null>(null);
   const [pinFeedback, setPinFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
 
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const userId = session?.user?.name ?? undefined;
   const { pins, addPin } = usePins();
   const [mapZoom, setMapZoom] = useState(DEFAULT_VIEW_STATE.zoom);
@@ -148,6 +150,7 @@ export function SafeRouteMap() {
   const routeError = navigation.error ?? error ?? safeSpotsError;
   const showSafeSpotMarkers =
     safeSpotsEnabled && (mapZoom >= SAFE_SPOT_MARKER_MIN_ZOOM || Boolean(selectedSafeSpotId));
+  const showPinMarkers = mapZoom >= PIN_MARKER_MIN_ZOOM;
 
   useEffect(() => {
     if (activeRoute && sheetState !== "navigating" && !shouldStartSafeRoute) {
@@ -488,6 +491,12 @@ export function SafeRouteMap() {
   }, [requestMyLocation]);
 
   async function handlePinConfirm(tag: PinTag) {
+    if (sessionStatus !== "authenticated" || !userId) {
+      setPinFeedback({ ok: false, msg: "Log in to submit pins." });
+      window.setTimeout(() => setPinFeedback(null), 3000);
+      return;
+    }
+
     const coords: Coordinates =
       origin ?? (mapRef.current ? [mapRef.current.getCenter().lng, mapRef.current.getCenter().lat] : null) ?? [0, 0];
 
@@ -566,6 +575,10 @@ export function SafeRouteMap() {
         </div>
       )}
 
+      <div className="fixed right-3 top-3 z-10">
+        <UserMenu />
+      </div>
+
       {/*Map*/}
       <Map
         ref={mapRef}
@@ -601,7 +614,7 @@ export function SafeRouteMap() {
           selectedSafeSpotId={selectedSafeSpotId}
           showSafeSpots={showSafeSpotMarkers}
         />
-        <PinLayer pins={pins} />
+        <PinLayer pins={pins} visible={showPinMarkers} />
       </Map>
 
       {/* side options */}

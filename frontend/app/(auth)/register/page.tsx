@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { SyntheticEvent, useState } from "react";
 import AuthPageShell from "../../../components/auth-page-shell";
+import { Button } from "@/components/ui/button";
 
 export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
@@ -25,11 +26,7 @@ export default function RegisterPage() {
     }
 
     try {
-      const apiBase =
-        process.env.NEXT_PUBLIC_LUMEN_API_URL || "http://localhost:8000";
-      const url = `${apiBase.replace(/\/+$/, "")}/auth/register`;
-
-      const res = await fetch(url, {
+      const res = await fetch("/api/register", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username, password, confirmPassword }),
@@ -69,11 +66,11 @@ export default function RegisterPage() {
       title="Create your account"
       description="Set up your profile to save safe routes and return to them quickly later."
       footer={
-        <p className="text-sm text-slate-300">
+        <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link
             href="/login"
-            className="font-medium text-emerald-300 hover:text-emerald-200"
+            className="font-medium text-primary underline-offset-4 hover:underline"
           >
             Log in
           </Link>
@@ -82,10 +79,7 @@ export default function RegisterPage() {
     >
       <form onSubmit={handleSubmit} method="POST" className="space-y-4">
         <div className="space-y-2">
-          <label
-            className="text-sm font-medium text-slate-200"
-            htmlFor="username"
-          >
+          <label className="text-sm font-medium text-foreground" htmlFor="username">
             Username
           </label>
           <input
@@ -94,15 +88,12 @@ export default function RegisterPage() {
             name="username"
             placeholder="Username"
             required
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20"
+            className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
           />
         </div>
 
         <div className="space-y-2">
-          <label
-            className="text-sm font-medium text-slate-200"
-            htmlFor="password"
-          >
+          <label className="text-sm font-medium text-foreground" htmlFor="password">
             Password
           </label>
           <input
@@ -111,13 +102,13 @@ export default function RegisterPage() {
             name="password"
             placeholder="Password"
             required
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20"
+            className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
           />
         </div>
 
         <div className="space-y-2">
           <label
-            className="text-sm font-medium text-slate-200"
+            className="text-sm font-medium text-foreground"
             htmlFor="confirmPassword"
           >
             Confirm password
@@ -128,23 +119,24 @@ export default function RegisterPage() {
             name="confirmPassword"
             placeholder="Confirm Password"
             required
-            className="w-full rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-white placeholder:text-slate-500 outline-none transition focus:border-emerald-400/50 focus:ring-2 focus:ring-emerald-400/20"
+            className="h-11 w-full rounded-lg border border-input bg-background px-3 text-sm text-foreground shadow-sm outline-none transition placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/30"
           />
         </div>
 
         {error && (
-          <div className="rounded-2xl border border-rose-400/30 bg-rose-400/10 px-4 py-3 text-sm text-rose-100">
+          <div className="rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {error}
           </div>
         )}
 
-        <button
+        <Button
           type="submit"
           disabled={loading}
-          className="inline-flex w-full items-center justify-center rounded-full bg-white px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-slate-200 disabled:cursor-not-allowed disabled:opacity-60"
+          size="lg"
+          className="mt-2 w-full"
         >
           {loading ? "Registering..." : "Register"}
-        </button>
+        </Button>
       </form>
     </AuthPageShell>
   );

@@ -12,15 +12,16 @@ export async function proxy(request: NextRequest) {
 
   const isAuthRoute =
     pathname.startsWith("/login") || pathname.startsWith("/register");
-  const isProtectedRoute = pathname.startsWith("/protected");
+  const isAppRoute = pathname === "/";
+  const isProtectedRoute = isAppRoute || pathname.startsWith("/protected");
 
   if (token && isAuthRoute) {
-    return NextResponse.redirect(new URL("/protected", origin));
+    return NextResponse.redirect(new URL("/", origin));
   }
 
   if (!token && isProtectedRoute) {
     const loginUrl = new URL("/login", origin);
-    loginUrl.search = search;
+    loginUrl.searchParams.set("callbackUrl", `${pathname}${search}`);
     return NextResponse.redirect(loginUrl);
   }
 
@@ -28,5 +29,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/login/:path*", "/register/:path*", "/protected/:path*"],
+  matcher: ["/", "/login/:path*", "/register/:path*", "/protected/:path*"],
 };
