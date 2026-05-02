@@ -1,0 +1,10 @@
+# env files (can opt-in for committing if needed)
+.env*
+
+api/__pycache__/
+core/__pycache__/
+models/__pycache__/
+schemas/__pycache__/
+utils/__pycache__/
+tests/__pycache__/
+__pycache__/

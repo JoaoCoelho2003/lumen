@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import Providers from "./providers";
 import { Noto_Sans } from "next/font/google";
 import { cn } from "@/lib/utils";
 
@@ -21,7 +22,9 @@ export default function RootLayout({
       className={cn("h-full antialiased dark", "font-sans", notoSans.variable)}
     >
       <body className="min-h-full overflow-hidden bg-background text-foreground">
-        {children}
+        
+        <Providers>{children}
+      </Providers>
       </body>
     </html>
   );
