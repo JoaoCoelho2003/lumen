@@ -5,6 +5,8 @@ import re
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
+from backend.api.auth import router as auth_router
+from backend.api.pins import router as pins_router
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
@@ -12,7 +14,6 @@ from api.auth import router as auth_router
 from utils.security import NextAuthJWT
 from core.database import engine, Base
 from db.models import *
-
 
 load_dotenv()
 
@@ -118,6 +119,7 @@ JWT = NextAuthJWT(secret=os.getenv("JWT_SECRET_KEY", "fallback_secret_for_dev"))
 
 
 app.include_router(auth_router)
+app.include_router(pins_router)
 
 @app.get("/")
 async def root():

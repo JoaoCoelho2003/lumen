@@ -6,9 +6,12 @@ import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 import { Crosshair, LightbulbOff, Loader2, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { type MapRef } from "react-map-gl";
+import { useSession } from "next-auth/react";
 import { useDirections } from "@/hooks/useDirections";
 import { useNavigation } from "@/hooks/useNavigation";
+import { usePins } from "@/hooks/usePins";
 import { useSafeSpots } from "@/hooks/useSafeSpots";
+
 import {
   DAY_STYLE_START_HOUR,
   DEFAULT_VIEW_STATE,
@@ -18,6 +21,7 @@ import {
   PORTUGAL_BOUNDS,
   PORTUGAL_TIME_ZONE,
 } from "@/lib/constants";
+
 import {
   calculateBearing,
   calculateDistance,
@@ -27,11 +31,14 @@ import type {
   Coordinates,
   GeocodingResult,
   NavigationState,
+  PinType,
   TravelProfile,
 } from "@/lib/types";
+import type { PinTag } from "@/components/ui/PinTags";
 import { CrimeLayer } from "@/components/map/CrimeLayer";
 import { HeatmapLayer } from "@/components/map/HeatmapLayer";
 import { MarkerLayer } from "@/components/map/MarkerLayer";
+import { PinLayer } from "@/components/map/PinLayer";
 import { RouteLayer } from "@/components/map/RouteLayer";
 import { LayerToggles } from "@/components/ui/LayerToggles";
 import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
@@ -77,6 +84,11 @@ export function SafeRouteMap() {
   const [isFocusedOnUser, setIsFocusedOnUser] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [pinFeedback, setPinFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const { data: session } = useSession();
+  const userId = session?.user?.name ?? undefined;
+  const { pins, addPin } = usePins();
   const [mapZoom, setMapZoom] = useState(DEFAULT_VIEW_STATE.zoom);
   const [selectedSafeSpotId, setSelectedSafeSpotId] = useState<string | null>(
     null,
@@ -417,6 +429,15 @@ export function SafeRouteMap() {
     return () => window.clearTimeout(initialLocationRequest);
   }, [requestMyLocation]);
 
+  async function handlePinConfirm(tag: PinTag) {
+    const coords: Coordinates =
+      origin ?? (mapRef.current ? [mapRef.current.getCenter().lng, mapRef.current.getCenter().lat] : null) ?? [0, 0];
+
+    const ok = await addPin(coords, tag.value as PinType, userId);
+    setPinFeedback(ok ? { ok: true, msg: "Pin submitted!" } : { ok: false, msg: "Failed to save pin." });
+    window.setTimeout(() => setPinFeedback(null), 3000);
+  }
+
   function handleStopNavigation() {
     const currentCoordinates = navigation.position?.coordinates ?? origin;
 
@@ -479,6 +500,14 @@ export function SafeRouteMap() {
         </div>
       )}
 
+      {pinFeedback && (
+        <div
+          className={`pointer-events-none p-3 fixed inset-x-4 top-16 z-40 rounded-xl border text-xs shadow-2xl backdrop-blur-md ${pinFeedback.ok ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400" : "border-destructive/40 bg-destructive/15 text-destructive"}`}
+        >
+          {pinFeedback.msg}
+        </div>
+      )}
+
       {/*Map*/}
       <Map
         ref={mapRef}
@@ -517,6 +546,7 @@ export function SafeRouteMap() {
           }
           selectedSafeSpotId={selectedSafeSpotId}
         />
+        <PinLayer pins={pins} />
       </Map>
 
       {/* side options */}
@@ -551,7 +581,7 @@ export function SafeRouteMap() {
         description="Alert about pins on the route. Tap to view details."
         triggerLabel="Open quick settings"
       >
-        <PinTags tags={pinTags} />
+        <PinTags tags={pinTags} onConfirm={handlePinConfirm} />
       </RightSideDrawer>
 
       <MapBottomDrawer
