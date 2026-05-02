@@ -17,8 +17,16 @@ import type {
   Route,
   TravelProfile,
 } from "@/lib/types";
-import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+} from "@/components/ui/drawer";
+import { Slider } from "@/components/ui/slider";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchBar } from "@/components/ui/SearchBar";
+import { ActionButtons } from "@/components/ui/action-buttons";
 
 const MID_SNAP = 0.35;
 const DEFAULT_OPEN_SNAP = 1;
@@ -79,7 +87,8 @@ export function MapBottomDrawer({
   onStopNavigation,
 }: MapBottomDrawerProps) {
   const showSearch = state !== "navigating";
-  const [openSnapPoint, setOpenSnapPoint] = useState<DrawerSnapPoint>(DEFAULT_OPEN_SNAP);
+  const [openSnapPoint, setOpenSnapPoint] =
+    useState<DrawerSnapPoint>(DEFAULT_OPEN_SNAP);
   const [drawerState, setDrawerState] = useState<{
     mode: NavigationState;
     snapPoint: DrawerSnapPoint;
@@ -112,7 +121,14 @@ export function MapBottomDrawer({
   const remainingSteps = route?.steps.slice(activeStepIndex) ?? [];
   const snapPoints = [MID_SNAP, openSnapPoint];
   const activeSnapPointIsAvailable = snapPoints.includes(activeSnapPoint);
-  const resolvedActiveSnapPoint = activeSnapPointIsAvailable ? activeSnapPoint : openSnapPoint;
+  const resolvedActiveSnapPoint = activeSnapPointIsAvailable
+    ? activeSnapPoint
+    : openSnapPoint;
+  const [pinWeights, setPinWeights] = useState({
+    lowLight: 50,
+    dangerousArea: 50,
+  });
+  const [hasPendingChanges, setHasPendingChanges] = useState(false);
 
   function handleSearchFocus() {
     const nextOpenSnapPoint = getViewportSnapPoint();
@@ -127,6 +143,17 @@ export function MapBottomDrawer({
     setDrawerState({ mode: state, snapPoint: nextOpenSnapPoint });
   }
 
+  function updatePinWeight(key: "lowLight" | "dangerousArea", value: number) {
+    setPinWeights((current) => ({ ...current, [key]: value }));
+    setHasPendingChanges(true);
+    // TODO: connect to tanstack mutation for API persistence.
+  }
+
+  function handleSavePinWeights() {
+    // TODO: connect to tanstack mutation for API persistence.
+    setHasPendingChanges(false);
+  }
+
   return (
     <Drawer
       open
@@ -137,23 +164,32 @@ export function MapBottomDrawer({
       activeSnapPoint={resolvedActiveSnapPoint}
       setActiveSnapPoint={(snapPoint) => {
         if (snapPoint !== null && snapPoints.includes(snapPoint)) {
-          setDrawerState({ mode: state, snapPoint: snapPoint as DrawerSnapPoint });
+          setDrawerState({
+            mode: state,
+            snapPoint: snapPoint as DrawerSnapPoint,
+          });
         }
       }}
     >
       <DrawerContent
         showOverlay={false}
-        className="z-40 mx-auto h-[100dvh] max-h-[100dvh] max-w-3xl rounded-t-2xl border-x border-t border-white/10 bg-[#0f1117]/95 p-0 text-white shadow-2xl backdrop-blur-md before:hidden sm:inset-x-4 sm:bottom-4 sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:border"
+        className="z-40 mx-auto h-[100dvh] max-h-[100dvh] max-w-3xl rounded-t-2xl border-x border-t border-border/60 bg-card/95 p-0 text-foreground shadow-2xl backdrop-blur-md before:hidden sm:inset-x-4 sm:bottom-4 sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:border"
       >
         <DrawerTitle className="sr-only">Route controls</DrawerTitle>
         <DrawerDescription className="sr-only">
-          Search for a destination, preview the route, and manage active navigation.
+          Search for a destination, preview the route, and manage active
+          navigation.
         </DrawerDescription>
-        <div className="mx-auto mt-3 h-1.5 w-24 shrink-0 rounded-full bg-white/20" />
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-3 sm:px-4">
-          {showSearch ? (
-            <div className="shrink-0">
+          {showSearch && (
+            <div
+              className={
+                state === "preview"
+                  ? "flex flex-col gap-6"
+                  : "flex min-h-0 flex-1 flex-col gap-6"
+              }
+            >
               <SearchBar
                 destinationLabel={destinationLabel}
                 error={state === "idle" ? error : null}
@@ -163,73 +199,168 @@ export function MapBottomDrawer({
                 onDestinationSelect={handleDestinationSelect}
                 onDestinationCoordinatesChange={onDestinationCoordinatesChange}
               />
-            </div>
-          ) : null}
 
-          {state === "navigating" ? (
+              {state !== "preview" && (
+                <Tabs defaultValue="overview" className="w-full min-h-0 flex-1">
+                  <TabsList variant="line" className="w-full">
+                    <TabsTrigger value="overview">Statistics</TabsTrigger>
+                    <TabsTrigger value="reports">Settings</TabsTrigger>
+                  </TabsList>
+                  <TabsContent
+                    value="overview"
+                    className="mt-4 max-h-[42vh] overflow-y-auto pr-1"
+                  >
+                    <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+                      Hello World
+                    </div>
+                  </TabsContent>
+                  <TabsContent
+                    value="reports"
+                    className="mt-4 max-h-[42vh] overflow-y-auto pr-1"
+                  >
+                    <div className="px-4 py-6 text-sm text-muted-foreground">
+                      <div className="space-y-4">
+                        <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium">
+                                Low light weight
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Influence for low-light segments
+                              </p>
+                            </div>
+                            <span className="text-xs font-semibold text-foreground">
+                              {pinWeights.lowLight}
+                            </span>
+                          </div>
+                          <div className="mt-3">
+                            <Slider
+                              value={[pinWeights.lowLight]}
+                              min={0}
+                              max={100}
+                              onValueChange={([value]) =>
+                                updatePinWeight("lowLight", value)
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <p className="text-sm font-medium">
+                                Dangerous area weight
+                              </p>
+                              <p className="text-xs text-muted-foreground">
+                                Influence for dangerous areas
+                              </p>
+                            </div>
+                            <span className="text-xs font-semibold text-foreground">
+                              {pinWeights.dangerousArea}
+                            </span>
+                          </div>
+                          <div className="mt-3">
+                            <Slider
+                              value={[pinWeights.dangerousArea]}
+                              min={0}
+                              max={100}
+                              onValueChange={([value]) =>
+                                updatePinWeight("dangerousArea", value)
+                              }
+                            />
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-end">
+                          <button
+                            type="button"
+                            onClick={handleSavePinWeights}
+                            className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-all duration-300 ease-out hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
+                            disabled={!hasPendingChanges}
+                          >
+                            Save weights
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
+                </Tabs>
+              )}
+
+              <ActionButtons visible={state !== "preview"} />
+            </div>
+          )}
+
+          {state === "navigating" && (
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="flex shrink-0 items-center justify-between gap-3 px-1 py-2 text-left">
                 <div className="min-w-0">
-                  <p className="text-xs uppercase tracking-wide text-slate-400">Remaining</p>
+                  <p className="text-xs uppercase tracking-wide text-muted-foreground">
+                    Remaining
+                  </p>
                   <p className="truncate text-base font-semibold">
-                    {formatDuration(durationRemaining)} · {formatDistance(distanceRemaining)}
+                    {formatDuration(durationRemaining)} ·{" "}
+                    {formatDistance(distanceRemaining)}
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={onStopNavigation}
-                  className="rounded-xl bg-red-500 px-3 py-2 text-xs font-semibold text-white transition-all duration-300 ease-out hover:bg-red-600"
+                  className="rounded-xl bg-destructive px-3 py-2 text-xs font-semibold text-destructive-foreground transition-all duration-300 ease-out hover:bg-destructive/90"
                 >
                   Stop
                 </button>
               </div>
 
-              <div className="min-h-0 flex-1 overflow-y-auto border-t border-white/10 px-1 py-2">
+              <div className="min-h-0 flex-1 overflow-y-auto border-t border-border/60 px-1 py-2">
                 {remainingSteps.map((step, index) => (
                   <div
                     key={`${step.instruction}-${index}`}
-                    className="flex items-start gap-3 border-b border-white/5 py-3 last:border-0"
+                    className="flex items-start gap-3 border-b border-border/40 py-3 last:border-0"
                   >
-                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/10 text-blue-300">
+                    <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-muted/60 text-primary">
                       <ManeuverIcon type={step.maneuver.type} />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-white">{step.instruction}</p>
-                      <p className="text-xs text-slate-400">{formatDistance(step.distance)}</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {step.instruction}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistance(step.distance)}
+                      </p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
-          ) : null}
+          )}
 
-          {state === "preview" ? (
-            <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.03]">
-              <div className="shrink-0 border-b border-white/10 px-4 py-4">
+          {state === "preview" && (
+            <div className="mt-3 flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-border/60 bg-muted/20">
+              <div className="shrink-0 border-b border-border/60 px-4 py-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
                     <p className="truncate text-lg font-semibold">
                       {destinationName || "Selected destination"}
                     </p>
-                    <p className="text-sm text-slate-400">
+                    <p className="text-sm text-muted-foreground">
                       {route
                         ? `${formatDistance(route.distance)} · ${formatDuration(route.duration)}`
                         : "Set origin and destination to calculate a route"}
                     </p>
                   </div>
-                  {isLoadingRoute ? (
-                    <Loader2 className="h-5 w-5 animate-spin text-blue-300" />
-                  ) : null}
+                  {isLoadingRoute && (
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  )}
                 </div>
 
-                <div className="mt-4 grid grid-cols-2 rounded-xl bg-white/5 p-1">
+                <div className="mt-4 grid grid-cols-2 rounded-xl bg-muted/30 p-1">
                   <button
                     type="button"
                     onClick={() => onProfileChange("driving")}
                     className={`flex min-h-10 items-center justify-center gap-2 rounded-lg text-sm font-medium transition-all duration-300 ease-out ${
                       profile === "driving"
-                        ? "bg-blue-500 text-white"
-                        : "text-slate-400 hover:bg-white/10 hover:text-white"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     }`}
                   >
                     <Car className="h-4 w-4" />
@@ -240,8 +371,8 @@ export function MapBottomDrawer({
                     onClick={() => onProfileChange("walking")}
                     className={`flex min-h-10 items-center justify-center gap-2 rounded-lg text-sm font-medium transition-all duration-300 ease-out ${
                       profile === "walking"
-                        ? "bg-blue-500 text-white"
-                        : "text-slate-400 hover:bg-white/10 hover:text-white"
+                        ? "bg-primary text-primary-foreground"
+                        : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                     }`}
                   >
                     <Footprints className="h-4 w-4" />
@@ -249,45 +380,48 @@ export function MapBottomDrawer({
                   </button>
                 </div>
 
-                {error ? (
-                  <p className="mt-3 rounded-xl border border-red-400/30 bg-red-950/60 px-3 py-2 text-sm text-red-100">
+                {error && (
+                  <p className="mt-3 rounded-xl border border-destructive/40 bg-destructive/15 px-3 py-2 text-sm text-destructive">
                     {error}
                   </p>
-                ) : null}
+                )}
               </div>
 
               <div className="min-h-0 flex-1 overflow-y-auto px-4 py-2">
                 {route?.steps.map((step, index) => (
                   <div
                     key={`${step.instruction}-${index}`}
-                    className="flex items-start gap-3 border-b border-white/5 py-3 last:border-0"
+                    className="flex items-start gap-3 border-b border-border/40 py-3 last:border-0"
                   >
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white/10 text-blue-300">
+                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted/60 text-primary">
                       <ManeuverIcon type={step.maneuver.type} />
                     </span>
                     <div className="min-w-0">
-                      <p className="text-sm font-medium text-white">{step.instruction}</p>
-                      <p className="text-xs text-slate-400">
-                        {formatDistance(step.distance)} · {formatDuration(step.duration)}
+                      <p className="text-sm font-medium text-foreground">
+                        {step.instruction}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDistance(step.distance)} ·{" "}
+                        {formatDuration(step.duration)}
                       </p>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className="shrink-0 border-t border-white/10 p-4">
+              <div className="shrink-0 border-t border-border/60 p-4">
                 <button
                   type="button"
                   disabled={!route || isLoadingRoute}
                   onClick={onStartJourney}
-                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-blue-500 px-4 text-sm font-semibold text-white transition-all duration-300 ease-out hover:bg-blue-600 disabled:cursor-not-allowed disabled:bg-slate-700 disabled:text-slate-400"
+                  className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-all duration-300 ease-out hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
                 >
                   <RouteIcon className="h-5 w-5" />
                   Start Journey
                 </button>
               </div>
             </div>
-          ) : null}
+          )}
         </div>
       </DrawerContent>
     </Drawer>

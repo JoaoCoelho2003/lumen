@@ -99,12 +99,19 @@ export function useDirections(
           duration: firstRoute.duration,
         });
       } catch (routeError) {
-        if (routeError instanceof DOMException && routeError.name === "AbortError") {
+        if (
+          routeError instanceof DOMException &&
+          routeError.name === "AbortError"
+        ) {
           return;
         }
 
         setRoute(null);
-        setError(routeError instanceof Error ? routeError.message : "Could not calculate route.");
+        setError(
+          routeError instanceof Error
+            ? routeError.message
+            : "Could not calculate route.",
+        );
       } finally {
         setIsLoading(false);
       }

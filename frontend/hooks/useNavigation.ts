@@ -64,104 +64,121 @@ export function useNavigation(route: Route | null): NavigationHook {
     previousCoordinatesRef.current = null;
   }, [clearPositionWatch]);
 
-  const startNavigation = useCallback((initialCoordinates?: Coordinates) => {
-    if (!route || route.geometry.coordinates.length === 0) {
-      return;
-    }
+  const startNavigation = useCallback(
+    (initialCoordinates?: Coordinates) => {
+      if (!route || route.geometry.coordinates.length === 0) {
+        return;
+      }
 
-    if (!navigator.geolocation) {
-      setError("Your browser does not support GPS location.");
-      return;
-    }
+      if (!navigator.geolocation) {
+        setError("Your browser does not support GPS location.");
+        return;
+      }
 
-    if (!window.isSecureContext) {
-      setError("GPS requires HTTPS on mobile browsers. Use HTTPS or test on localhost.");
-      return;
-    }
-
-    clearPositionWatch();
-    previousCoordinatesRef.current = null;
-    setError(null);
-    setIsFinished(false);
-    setIsNavigating(true);
-
-    if (initialCoordinates) {
-      const initialDistanceTravelled = Math.min(
-        routeDistance,
-        findDistanceAlongRoute(route.geometry.coordinates, initialCoordinates),
-      );
-      const initialBearing = getBearingAtDistance(
-        route.geometry.coordinates,
-        initialDistanceTravelled,
-      );
-      const initialStepIndex = findClosestStepIndex(route.steps, initialCoordinates);
-
-      previousCoordinatesRef.current = initialCoordinates;
-      setDistanceTravelled(initialDistanceTravelled);
-      setPosition({
-        coordinates: initialCoordinates,
-        bearing: initialBearing,
-        stepIndex: initialStepIndex,
-        distanceTravelled: initialDistanceTravelled,
-      });
-    }
-
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (gpsPosition) => {
-        const nextCoordinates: Coordinates = [
-          gpsPosition.coords.longitude,
-          gpsPosition.coords.latitude,
-        ];
-        const nextDistanceTravelled = Math.min(
-          routeDistance,
-          findDistanceAlongRoute(route.geometry.coordinates, nextCoordinates),
+      if (!window.isSecureContext) {
+        setError(
+          "GPS requires HTTPS on mobile browsers. Use HTTPS or test on localhost.",
         );
-        const previousCoordinates = previousCoordinatesRef.current;
-        const hasUsefulMovement =
-          previousCoordinates !== null &&
-          calculateDistance(previousCoordinates, nextCoordinates) >= 2;
-        const bearing = hasUsefulMovement
-          ? calculateBearing(previousCoordinates, nextCoordinates)
-          : getBearingAtDistance(route.geometry.coordinates, nextDistanceTravelled);
-        const closestStepIndex = findClosestStepIndex(route.steps, nextCoordinates);
+        return;
+      }
 
-        previousCoordinatesRef.current = nextCoordinates;
-        setDistanceTravelled(nextDistanceTravelled);
+      clearPositionWatch();
+      previousCoordinatesRef.current = null;
+      setError(null);
+      setIsFinished(false);
+      setIsNavigating(true);
+
+      if (initialCoordinates) {
+        const initialDistanceTravelled = Math.min(
+          routeDistance,
+          findDistanceAlongRoute(
+            route.geometry.coordinates,
+            initialCoordinates,
+          ),
+        );
+        const initialBearing = getBearingAtDistance(
+          route.geometry.coordinates,
+          initialDistanceTravelled,
+        );
+        const initialStepIndex = findClosestStepIndex(
+          route.steps,
+          initialCoordinates,
+        );
+
+        previousCoordinatesRef.current = initialCoordinates;
+        setDistanceTravelled(initialDistanceTravelled);
         setPosition({
-          coordinates: nextCoordinates,
-          bearing,
-          stepIndex: closestStepIndex,
-          distanceTravelled: nextDistanceTravelled,
+          coordinates: initialCoordinates,
+          bearing: initialBearing,
+          stepIndex: initialStepIndex,
+          distanceTravelled: initialDistanceTravelled,
         });
+      }
 
-        if (
-          route.geometry.coordinates.length > 0 &&
-          calculateDistance(
+      watchIdRef.current = navigator.geolocation.watchPosition(
+        (gpsPosition) => {
+          const nextCoordinates: Coordinates = [
+            gpsPosition.coords.longitude,
+            gpsPosition.coords.latitude,
+          ];
+          const nextDistanceTravelled = Math.min(
+            routeDistance,
+            findDistanceAlongRoute(route.geometry.coordinates, nextCoordinates),
+          );
+          const previousCoordinates = previousCoordinatesRef.current;
+          const hasUsefulMovement =
+            previousCoordinates !== null &&
+            calculateDistance(previousCoordinates, nextCoordinates) >= 2;
+          const bearing = hasUsefulMovement
+            ? calculateBearing(previousCoordinates, nextCoordinates)
+            : getBearingAtDistance(
+                route.geometry.coordinates,
+                nextDistanceTravelled,
+              );
+          const closestStepIndex = findClosestStepIndex(
+            route.steps,
             nextCoordinates,
-            route.geometry.coordinates[route.geometry.coordinates.length - 1],
-          ) < 25
-        ) {
+          );
+
+          previousCoordinatesRef.current = nextCoordinates;
+          setDistanceTravelled(nextDistanceTravelled);
+          setPosition({
+            coordinates: nextCoordinates,
+            bearing,
+            stepIndex: closestStepIndex,
+            distanceTravelled: nextDistanceTravelled,
+          });
+
+          if (
+            route.geometry.coordinates.length > 0 &&
+            calculateDistance(
+              nextCoordinates,
+              route.geometry.coordinates[route.geometry.coordinates.length - 1],
+            ) < 25
+          ) {
+            clearPositionWatch();
+            setIsNavigating(false);
+            setIsFinished(true);
+          }
+        },
+        (locationError) => {
           clearPositionWatch();
           setIsNavigating(false);
-          setIsFinished(true);
-        }
-      },
-      (locationError) => {
-        clearPositionWatch();
-        setIsNavigating(false);
-        setError(
-          locationError.code === locationError.PERMISSION_DENIED
-            ? "Location permission was denied. Allow location access in the browser to navigate."
-            : "Could not get your GPS location. Check location services and browser permissions.",
-        );
-      },
-      {
-        enableHighAccuracy: true,
-        timeout: 15_000,
-        maximumAge: 0,
-      },
-    );
-  }, [clearPositionWatch, route, routeDistance]);
+          setError(
+            locationError.code === locationError.PERMISSION_DENIED
+              ? "Location permission was denied. Allow location access in the browser to navigate."
+              : "Could not get your GPS location. Check location services and browser permissions.",
+          );
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 15_000,
+          maximumAge: 0,
+        },
+      );
+    },
+    [clearPositionWatch, route, routeDistance],
+  );
 
   useEffect(() => {
     return () => {

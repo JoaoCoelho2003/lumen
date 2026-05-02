@@ -15,12 +15,17 @@ export function calculateBearing(start: Coordinates, end: Coordinates): number {
   const y = Math.sin(longitudeDelta) * Math.cos(endLatRadians);
   const x =
     Math.cos(startLatRadians) * Math.sin(endLatRadians) -
-    Math.sin(startLatRadians) * Math.cos(endLatRadians) * Math.cos(longitudeDelta);
+    Math.sin(startLatRadians) *
+      Math.cos(endLatRadians) *
+      Math.cos(longitudeDelta);
 
   return (toDegrees(Math.atan2(y, x)) + 360) % 360;
 }
 
-export function calculateDistance(start: Coordinates, end: Coordinates): number {
+export function calculateDistance(
+  start: Coordinates,
+  end: Coordinates,
+): number {
   const [startLng, startLat] = start;
   const [endLng, endLat] = end;
   const latitudeDelta = toRadians(endLat - startLat);
@@ -94,7 +99,10 @@ export function getBearingAtDistance(
   const next = interpolatePosition(coordinates, distanceTravelled + 15);
 
   if (calculateDistance(current, next) < 0.5) {
-    return calculateBearing(coordinates[coordinates.length - 2], coordinates[coordinates.length - 1]);
+    return calculateBearing(
+      coordinates[coordinates.length - 2],
+      coordinates[coordinates.length - 1],
+    );
   }
 
   return calculateBearing(current, next);
@@ -110,7 +118,10 @@ export function findClosestStepIndex(
 
   return steps.reduce(
     (closest, step, index) => {
-      const distance = calculateDistance(currentPosition, step.maneuver.location);
+      const distance = calculateDistance(
+        currentPosition,
+        step.maneuver.location,
+      );
 
       if (distance < closest.distance) {
         return { index, distance };
@@ -169,7 +180,8 @@ export function findDistanceAlongRoute(
     const segmentDistance = calculateDistance(start, end);
     const segmentLng = end[0] - start[0];
     const segmentLat = end[1] - start[1];
-    const segmentLengthSquared = segmentLng * segmentLng + segmentLat * segmentLat;
+    const segmentLengthSquared =
+      segmentLng * segmentLng + segmentLat * segmentLat;
     const projection =
       segmentLengthSquared === 0
         ? 0
@@ -181,11 +193,15 @@ export function findDistanceAlongRoute(
       start[0] + segmentLng * clampedProjection,
       start[1] + segmentLat * clampedProjection,
     ];
-    const distanceToRoute = calculateDistance(currentPosition, projectedCoordinate);
+    const distanceToRoute = calculateDistance(
+      currentPosition,
+      projectedCoordinate,
+    );
 
     if (distanceToRoute < closestDistanceToRoute) {
       closestDistanceToRoute = distanceToRoute;
-      closestDistanceAlongRoute = distanceBeforeSegment + segmentDistance * clampedProjection;
+      closestDistanceAlongRoute =
+        distanceBeforeSegment + segmentDistance * clampedProjection;
     }
 
     distanceBeforeSegment += segmentDistance;
