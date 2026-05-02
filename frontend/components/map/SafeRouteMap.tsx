@@ -6,10 +6,13 @@ import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 import { Crosshair, LightbulbOff, Loader2, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { type MapRef } from "react-map-gl";
+import { useSession } from "next-auth/react";
 import { useDirections } from "../../hooks/useDirections";
 import { useRouteWeights } from "../../hooks/useRouteWeights";
 import { useNavigation } from "../../hooks/useNavigation";
+import { usePins } from "@/hooks/usePins";
 import { useSafeSpots } from "../../hooks/useSafeSpots";
+
 import {
   DAY_STYLE_START_HOUR,
   DEFAULT_VIEW_STATE,
@@ -19,6 +22,7 @@ import {
   PORTUGAL_BOUNDS,
   PORTUGAL_TIME_ZONE,
 } from "../../lib/constants";
+
 import {
   calculateBearing,
   calculateDistance,
@@ -28,11 +32,14 @@ import type {
   Coordinates,
   GeocodingResult,
   NavigationState,
+  PinType,
   TravelProfile,
 } from "../../lib/types";
+import type { PinTag } from "@/components/ui/PinTags";
 import { CrimeLayer } from "../../components/map/CrimeLayer";
 import { HeatmapLayer } from "../../components/map/HeatmapLayer";
 import { MarkerLayer } from "../../components/map/MarkerLayer";
+import { PinLayer } from "@/components/map/PinLayer";
 import { RouteLayer } from "../../components/map/RouteLayer";
 import { LayerToggles } from "../../components/ui/LayerToggles";
 import { MapBottomDrawer } from "../../components/ui/MapBottomDrawer";
@@ -62,6 +69,16 @@ function coordinatesMatch(first: Coordinates, second: Coordinates) {
 }
 
 const SAFE_SPOT_MARKER_MIN_ZOOM = 13;
+const FAST_LOCATION_OPTIONS: PositionOptions = {
+  enableHighAccuracy: false,
+  timeout: 3_000,
+  maximumAge: 60_000,
+};
+const PRECISE_LOCATION_OPTIONS: PositionOptions = {
+  enableHighAccuracy: true,
+  timeout: 15_000,
+  maximumAge: 5_000,
+};
 
 export function SafeRouteMap() {
   const mapRef = useRef<MapRef | null>(null);
@@ -77,13 +94,20 @@ export function SafeRouteMap() {
   const [isFocusedOnUser, setIsFocusedOnUser] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [pinFeedback, setPinFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+
+  const { data: session } = useSession();
+  const userId = session?.user?.name ?? undefined;
+  const { pins, addPin } = usePins();
   const [mapZoom, setMapZoom] = useState(DEFAULT_VIEW_STATE.zoom);
+  const [safeSpotsEnabled, setSafeSpotsEnabled] = useState(true);
   const [selectedSafeSpotId, setSelectedSafeSpotId] = useState<string | null>(
     null,
   );
   const [shouldStartSafeRoute, setShouldStartSafeRoute] = useState(false);
   const [shouldAutoStartRoute, setShouldAutoStartRoute] = useState(false);
   const lastSafeSpotOriginRef = useRef<Coordinates | null>(null);
+  const lastLocationAccuracyRef = useRef(Number.POSITIVE_INFINITY);
 
   const {
     weights,
@@ -112,8 +136,15 @@ export function SafeRouteMap() {
   );
   const { safeSpots, isLoadingSafeSpots, safeSpotsError, findSafeSpots } =
     useSafeSpots();
-  const activeRoute = origin && destination && route ? route : null;
-  const navigation = useNavigation(activeRoute);
+  const activeRoute =
+    origin &&
+    destination &&
+    route &&
+    coordinatesMatch(route.origin, origin) &&
+    coordinatesMatch(route.destination, destination)
+      ? route
+      : null;
+  const navigation = useNavigation(activeRoute, profile);
   const metricsOptions = {
     performanceMetricsCollection: false,
   };
@@ -136,6 +167,8 @@ export function SafeRouteMap() {
       activeRoute.duration
     : 0;
   const routeError = navigation.error ?? error ?? safeSpotsError;
+  const showSafeSpotMarkers =
+    safeSpotsEnabled && (mapZoom >= SAFE_SPOT_MARKER_MIN_ZOOM || Boolean(selectedSafeSpotId));
 
   useEffect(() => {
     if (activeRoute && sheetState !== "navigating" && !shouldStartSafeRoute) {
@@ -302,6 +335,36 @@ export function SafeRouteMap() {
     });
   }, []);
 
+  const applyLocation = useCallback(
+    (location: GeolocationPosition, force = false) => {
+      const coordinates: Coordinates = [
+        location.coords.longitude,
+        location.coords.latitude,
+      ];
+      const accuracy = location.coords.accuracy;
+
+      if (!force && accuracy > lastLocationAccuracyRef.current + 10) {
+        return coordinates;
+      }
+
+      lastLocationAccuracyRef.current = accuracy;
+      handleUseMyLocation(coordinates);
+
+      return coordinates;
+    },
+    [handleUseMyLocation],
+  );
+
+  const refineCurrentLocation = useCallback(() => {
+    navigator.geolocation.getCurrentPosition(
+      (location) => {
+        applyLocation(location);
+      },
+      () => undefined,
+      PRECISE_LOCATION_OPTIONS,
+    );
+  }, [applyLocation]);
+
   const requestCurrentLocation = useCallback(() => {
     setLocationError(null);
 
@@ -320,29 +383,42 @@ export function SafeRouteMap() {
 
     setIsLocating(true);
     return new Promise<Coordinates>((resolve, reject) => {
-      navigator.geolocation.getCurrentPosition(
-        (location) => {
-          const coordinates: Coordinates = [
-            location.coords.longitude,
-            location.coords.latitude,
-          ];
+      let settled = false;
+      const resolveWithLocation = (location: GeolocationPosition) => {
+        const coordinates = applyLocation(location, true);
 
-          handleUseMyLocation(coordinates);
+        if (!settled) {
+          settled = true;
           setIsLocating(false);
           resolve(coordinates);
-        },
-        () => {
-          const message =
-            "Could not get your location. Check browser permissions.";
+        }
 
+        refineCurrentLocation();
+      };
+      const rejectWithMessage = () => {
+        const message = "Could not get your location. Check browser permissions.";
+
+        if (!settled) {
+          settled = true;
           setLocationError(message);
           setIsLocating(false);
           reject(new Error(message));
+        }
+      };
+
+      navigator.geolocation.getCurrentPosition(
+        resolveWithLocation,
+        () => {
+          navigator.geolocation.getCurrentPosition(
+            resolveWithLocation,
+            rejectWithMessage,
+            PRECISE_LOCATION_OPTIONS,
+          );
         },
-        { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 },
+        FAST_LOCATION_OPTIONS,
       );
     });
-  }, [handleUseMyLocation]);
+  }, [applyLocation, refineCurrentLocation]);
 
   const requestMyLocation = useCallback(() => {
     void requestCurrentLocation().catch(() => undefined);
@@ -352,6 +428,8 @@ export function SafeRouteMap() {
     try {
       setLocationError(null);
       setShouldStartSafeRoute(false);
+      setProfile("walking");
+      void navigation.prepareCompassTracking();
       const currentOrigin = origin ?? (await requestCurrentLocation());
       const nearbySafeSpots = await findSafeSpots(currentOrigin);
       const closestSafeSpot = nearbySafeSpots[0];
@@ -365,7 +443,6 @@ export function SafeRouteMap() {
       setSelectedSafeSpotId(closestSafeSpot.id);
       setDestination(closestSafeSpot.coordinates);
       setDestinationLabel(`Safety Route: ${closestSafeSpot.name}`);
-      setProfile("walking");
       setSheetState("preview");
       setShouldStartSafeRoute(true);
     } catch (safeRouteError) {
@@ -376,7 +453,7 @@ export function SafeRouteMap() {
           : "Could not start a safety route.",
       );
     }
-  }, [findSafeSpots, origin, requestCurrentLocation]);
+  }, [findSafeSpots, navigation, origin, requestCurrentLocation]);
 
   useEffect(() => {
     if (!shouldStartSafeRoute || isLoading || !activeRoute || routeError) {
@@ -459,6 +536,15 @@ export function SafeRouteMap() {
     return () => window.clearTimeout(initialLocationRequest);
   }, [requestMyLocation]);
 
+  async function handlePinConfirm(tag: PinTag) {
+    const coords: Coordinates =
+      origin ?? (mapRef.current ? [mapRef.current.getCenter().lng, mapRef.current.getCenter().lat] : null) ?? [0, 0];
+
+    const ok = await addPin(coords, tag.value as PinType, userId);
+    setPinFeedback(ok ? { ok: true, msg: "Pin submitted!" } : { ok: false, msg: "Failed to save pin." });
+    window.setTimeout(() => setPinFeedback(null), 3000);
+  }
+
   function handleStopNavigation() {
     const currentCoordinates = navigation.position?.coordinates ?? origin;
 
@@ -513,6 +599,14 @@ export function SafeRouteMap() {
         </div>
       )}
 
+      {pinFeedback && (
+        <div
+          className={`pointer-events-none p-3 fixed inset-x-4 top-16 z-40 rounded-xl border text-xs shadow-2xl backdrop-blur-md ${pinFeedback.ok ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400" : "border-destructive/40 bg-destructive/15 text-destructive"}`}
+        >
+          {pinFeedback.msg}
+        </div>
+      )}
+
       {/*Map*/}
       <Map
         ref={mapRef}
@@ -544,13 +638,11 @@ export function SafeRouteMap() {
           origin={origin}
           destination={destination}
           position={navigation.position}
-          safeSpots={
-            mapZoom >= SAFE_SPOT_MARKER_MIN_ZOOM || selectedSafeSpotId
-              ? safeSpots
-              : []
-          }
+          safeSpots={safeSpots}
           selectedSafeSpotId={selectedSafeSpotId}
+          showSafeSpots={showSafeSpotMarkers}
         />
+        <PinLayer pins={pins} />
       </Map>
 
       {/* side options */}
@@ -585,7 +677,7 @@ export function SafeRouteMap() {
         description="Alert about pins on the route. Tap to view details."
         triggerLabel="Open quick settings"
       >
-        <PinTags tags={pinTags} />
+        <PinTags tags={pinTags} onConfirm={handlePinConfirm} />
       </RightSideDrawer>
 
       <MapBottomDrawer
@@ -618,6 +710,8 @@ export function SafeRouteMap() {
         onStopNavigation={handleStopNavigation}
         onSafetyRoute={handleSafetyRoute}
         isSafetyRouteLoading={isLoadingSafeSpots || isLocating}
+        safeSpotsEnabled={safeSpotsEnabled}
+        onSafeSpotsEnabledChange={setSafeSpotsEnabled}
       />
     </main>
   );

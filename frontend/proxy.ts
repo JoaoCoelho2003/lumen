@@ -10,7 +10,8 @@ export async function proxy(request: NextRequest) {
     secret: process.env.NEXTAUTH_SECRET,
   });
 
-  const isAuthRoute = pathname.startsWith("/login") || pathname.startsWith("/register");
+  const isAuthRoute =
+    pathname.startsWith("/login") || pathname.startsWith("/register");
   const isProtectedRoute = pathname.startsWith("/protected");
 
   if (token && isAuthRoute) {

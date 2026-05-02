@@ -83,6 +83,7 @@ export type NavigationState = "idle" | "preview" | "navigating";
 export type NavigationPosition = {
   coordinates: Coordinates;
   bearing: number;
+  cameraBearing: number;
   stepIndex: number;
   distanceTravelled: number;
 };
@@ -139,4 +140,15 @@ export type MapboxDirectionsResponse = {
   routes?: MapboxDirectionsRoute[];
   message?: string;
   code?: string;
+};
+
+export type PinType = "dangerous-area" | "low-light";
+
+export type Pin = {
+  id: string;
+  latitude: number;
+  longitude: number;
+  pin_type: PinType;
+  user_id?: string;
+  created_at?: string;
 };

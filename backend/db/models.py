@@ -1,6 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float
+from sqlalchemy import Column, Float, Integer, String, DateTime, Float
 from sqlalchemy.sql import func
-from backend.core.database import Base
+from backend.backend.core.database import Base
 
 class User(Base):
     __tablename__ = "users"
@@ -20,3 +20,14 @@ class RouteWeights(Base):
     light_weight = Column(Float, default=1.0, nullable=False)
     crime_weight = Column(Float, default=1.0, nullable=False)
     updated_at = Column(DateTime(timezone=True), onupdate=func.now(), server_default=func.now())
+
+
+class Pin(Base):
+    __tablename__ = "pins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    pin_type = Column(String, nullable=False)
+    user_id = Column(String, nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())

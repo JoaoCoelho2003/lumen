@@ -8,7 +8,7 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-    const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {    
+  const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
@@ -25,7 +25,8 @@ export default function RegisterPage() {
     }
 
     try {
-      const apiBase = process.env.NEXT_PUBLIC_LUMEN_API_URL || "http://localhost:8000";
+      const apiBase =
+        process.env.NEXT_PUBLIC_LUMEN_API_URL || "http://localhost:8000";
       const url = `${apiBase.replace(/\/+$/, "")}/auth/register`;
 
       const res = await fetch(url, {
@@ -54,7 +55,9 @@ export default function RegisterPage() {
 
       setError(`Registration failed: ${errorMessage}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "An unexpected error occurred");
+      setError(
+        err instanceof Error ? err.message : "An unexpected error occurred",
+      );
     } finally {
       setLoading(false);
     }
@@ -68,7 +71,10 @@ export default function RegisterPage() {
       footer={
         <p className="text-sm text-slate-300">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-emerald-300 hover:text-emerald-200">
+          <Link
+            href="/login"
+            className="font-medium text-emerald-300 hover:text-emerald-200"
+          >
             Log in
           </Link>
         </p>
@@ -76,7 +82,10 @@ export default function RegisterPage() {
     >
       <form onSubmit={handleSubmit} method="POST" className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-200" htmlFor="username">
+          <label
+            className="text-sm font-medium text-slate-200"
+            htmlFor="username"
+          >
             Username
           </label>
           <input
@@ -90,7 +99,10 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-200" htmlFor="password">
+          <label
+            className="text-sm font-medium text-slate-200"
+            htmlFor="password"
+          >
             Password
           </label>
           <input
@@ -104,7 +116,10 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-200" htmlFor="confirmPassword">
+          <label
+            className="text-sm font-medium text-slate-200"
+            htmlFor="confirmPassword"
+          >
             Confirm password
           </label>
           <input

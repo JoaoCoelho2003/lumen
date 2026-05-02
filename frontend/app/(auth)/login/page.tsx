@@ -11,7 +11,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
-    e.preventDefault(); 
+    e.preventDefault();
     setError(null);
 
     const formData = new FormData(e.currentTarget);
@@ -39,7 +39,10 @@ export default function LoginPage() {
       footer={
         <p className="text-sm text-slate-300">
           Need an account?{" "}
-          <Link href="/register" className="font-medium text-emerald-300 hover:text-emerald-200">
+          <Link
+            href="/register"
+            className="font-medium text-emerald-300 hover:text-emerald-200"
+          >
             Create one
           </Link>
         </p>
@@ -47,7 +50,10 @@ export default function LoginPage() {
     >
       <form onSubmit={handleSubmit} method="POST" className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-200" htmlFor="username">
+          <label
+            className="text-sm font-medium text-slate-200"
+            htmlFor="username"
+          >
             Username
           </label>
           <input
@@ -61,7 +67,10 @@ export default function LoginPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-slate-200" htmlFor="password">
+          <label
+            className="text-sm font-medium text-slate-200"
+            htmlFor="password"
+          >
             Password
           </label>
           <input

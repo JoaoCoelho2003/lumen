@@ -26,6 +26,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { ActionButtons } from "@/components/ui/action-buttons";
@@ -73,6 +74,8 @@ type MapBottomDrawerProps = {
   onStopNavigation: () => void;
   onSafetyRoute: () => void;
   isSafetyRouteLoading: boolean;
+  safeSpotsEnabled: boolean;
+  onSafeSpotsEnabledChange: (enabled: boolean) => void;
 };
 
 function ManeuverIcon({ type }: { type: string }) {
@@ -113,6 +116,8 @@ export function MapBottomDrawer({
   onStopNavigation,
   onSafetyRoute,
   isSafetyRouteLoading,
+  safeSpotsEnabled,
+  onSafeSpotsEnabledChange,
 }: MapBottomDrawerProps) {
   const showSearch = state !== "navigating";
   const [openSnapPoint, setOpenSnapPoint] =
@@ -260,6 +265,21 @@ export function MapBottomDrawer({
                       ) : null}
 
                       <div className="space-y-4">
+                        <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-sm font-medium">Safe spots</p>
+                              <p className="text-xs text-muted-foreground">
+                                Show nearby police, hospitals, and firefighters
+                              </p>
+                            </div>
+                            <Switch
+                              checked={safeSpotsEnabled}
+                              onCheckedChange={onSafeSpotsEnabledChange}
+                              aria-label="Toggle safe spots"
+                            />
+                          </div>
+                        </div>
                         <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
                           <div className="flex items-center justify-between">
                             <div>
