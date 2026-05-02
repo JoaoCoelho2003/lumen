@@ -1,7 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchBackendJson } from "../lib/backend";
+import { useUpdateRouteWeightsMutation } from "@/app/api/mutations/routes";
+import { useRouteWeightsQuery } from "@/app/api/queries/routes";
+import {
+  DEFAULT_ROUTE_WEIGHTS,
+  normalizeRouteWeights,
+} from "@/app/api/routes";
 import type { RouteWeights } from "../lib/types";
 
 type RouteWeightsState = {
@@ -16,26 +21,14 @@ type RouteWeightsState = {
   saveWeights: () => Promise<void>;
 };
 
-const DEFAULT_WEIGHTS: RouteWeights = {
-  light_weight: 1,
-  crime_weight: 1,
-};
-
-function normalizeWeights(input?: Partial<RouteWeights> | null): RouteWeights {
-  return {
-    light_weight:
-      typeof input?.light_weight === "number" ? input.light_weight : 1,
-    crime_weight:
-      typeof input?.crime_weight === "number" ? input.crime_weight : 1,
-  };
-}
-
 export function useRouteWeights(): RouteWeightsState {
-  const [weights, setWeights] = useState<RouteWeights>(DEFAULT_WEIGHTS);
-  const [draftWeights, setDraftWeights] = useState<RouteWeights>(DEFAULT_WEIGHTS);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const weightsQuery = useRouteWeightsQuery();
+  const updateWeightsMutation = useUpdateRouteWeightsMutation();
+  const [weights, setWeights] = useState<RouteWeights>(DEFAULT_ROUTE_WEIGHTS);
+  const [draftWeights, setDraftWeights] = useState<RouteWeights>(
+    DEFAULT_ROUTE_WEIGHTS,
+  );
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const hasPendingChanges = useMemo(
     () =>
@@ -45,91 +38,56 @@ export function useRouteWeights(): RouteWeightsState {
   );
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function loadWeights() {
-      setIsLoading(true);
-      setError(null);
-
-      try {
-        const data = await fetchBackendJson<Partial<RouteWeights>>(
-          "/routes/weights",
-        );
-        if (cancelled) {
-          return;
-        }
-
-        const nextWeights = normalizeWeights(data);
-        setWeights(nextWeights);
-        setDraftWeights(nextWeights);
-      } catch (loadError) {
-        if (cancelled) {
-          return;
-        }
-
-        setError(
-          loadError instanceof Error
-            ? loadError.message
-            : "Could not load route weights.",
-        );
-        setWeights(DEFAULT_WEIGHTS);
-        setDraftWeights(DEFAULT_WEIGHTS);
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
+    if (!weightsQuery.data) {
+      return;
     }
 
-    void loadWeights();
+    const nextWeights = normalizeRouteWeights(weightsQuery.data);
+    const syncWeights = window.setTimeout(() => {
+      setWeights(nextWeights);
+      setDraftWeights(nextWeights);
+    }, 0);
 
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    return () => window.clearTimeout(syncWeights);
+  }, [weightsQuery.data]);
 
   const setLightWeight = useCallback((value: number) => {
+    setSaveError(null);
     setDraftWeights((current) => ({ ...current, light_weight: value }));
   }, []);
 
   const setCrimeWeight = useCallback((value: number) => {
+    setSaveError(null);
     setDraftWeights((current) => ({ ...current, crime_weight: value }));
   }, []);
 
   const saveWeights = useCallback(async () => {
-    setIsSaving(true);
-    setError(null);
+    setSaveError(null);
 
     try {
-      const data = await fetchBackendJson<RouteWeights>("/routes/weights", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(draftWeights),
-      });
-
-      const nextWeights = normalizeWeights(data);
+      const data = await updateWeightsMutation.mutateAsync(draftWeights);
+      const nextWeights = normalizeRouteWeights(data);
       setWeights(nextWeights);
       setDraftWeights(nextWeights);
     } catch (saveError) {
-      setError(
+      setSaveError(
         saveError instanceof Error
           ? saveError.message
           : "Could not save route weights.",
       );
       throw saveError;
-    } finally {
-      setIsSaving(false);
     }
-  }, [draftWeights]);
+  }, [draftWeights, updateWeightsMutation]);
+
+  const queryError =
+    weightsQuery.error instanceof Error ? weightsQuery.error.message : null;
 
   return {
     weights,
     draftWeights,
-    isLoading,
-    isSaving,
-    error,
+    isLoading: weightsQuery.isLoading,
+    isSaving: updateWeightsMutation.isPending,
+    error: saveError ?? queryError,
     hasPendingChanges,
     setLightWeight,
     setCrimeWeight,

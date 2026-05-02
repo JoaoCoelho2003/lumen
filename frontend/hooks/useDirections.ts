@@ -1,14 +1,13 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { fetchBackendJson } from "../lib/backend";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRankMapboxRoutes } from "@/app/api/queries/routes";
 import { MAPBOX_TOKEN } from "../lib/constants";
 import { mapboxRouteToRoute } from "../lib/mapbox";
 import type {
   Coordinates,
   MapboxDirectionsRoute,
   MapboxDirectionsResponse,
-  MapboxRouteRankResponse,
   RankedRoute,
   Route,
   RouteWeights,
@@ -36,6 +35,19 @@ export function useDirections(
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mapboxRoutes, setMapboxRoutes] = useState<MapboxDirectionsRoute[]>([]);
+  const rankRequest = useMemo(
+    () =>
+      mapboxRoutes.length > 0
+        ? {
+            routes: mapboxRoutes,
+            light_weight: weights.light_weight,
+            crime_weight: weights.crime_weight,
+            sample_spacing_m: 50,
+          }
+        : null,
+    [mapboxRoutes, weights.crime_weight, weights.light_weight],
+  );
+  const rankQuery = useRankMapboxRoutes(rankRequest);
 
   useEffect(() => {
     if (!origin || !destination) {
@@ -135,79 +147,42 @@ export function useDirections(
   }, [destination, origin, profile]);
 
   useEffect(() => {
-    if (!mapboxRoutes.length) {
+    const ranked = rankQuery.data;
+
+    if (!ranked) {
       return;
     }
 
-    const controller = new AbortController();
-    let cancelled = false;
+    const nextSelectedIndex =
+      ranked.best_route_index ?? ranked.ranked_routes[0]?.source_route_index ?? 0;
 
-    async function rankRoutes() {
-      setIsLoading(true);
+    const syncRankedRoute = window.setTimeout(() => {
+      setRankedRoutes(ranked.ranked_routes.slice(0, 10));
+      setSelectedRouteIndex(nextSelectedIndex);
 
-      try {
-        const ranked = await fetchBackendJson<MapboxRouteRankResponse>(
-          "/routes/rank-mapbox",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              response: { routes: mapboxRoutes },
-              light_weight: weights.light_weight,
-              crime_weight: weights.crime_weight,
-              sample_spacing_m: 50,
-            }),
-            signal: controller.signal,
-          },
-        );
+      const selected = mapboxRoutes[nextSelectedIndex];
+      setRoute(selected ? mapboxRouteToRoute(selected) : null);
+    }, 0);
 
-        if (cancelled) {
-          return;
-        }
+    return () => window.clearTimeout(syncRankedRoute);
+  }, [mapboxRoutes, rankQuery.data]);
 
-        const nextSelectedIndex =
-          ranked.best_route_index ??
-          ranked.ranked_routes[0]?.source_route_index ??
-          0;
-
-        setRankedRoutes(ranked.ranked_routes.slice(0, 10));
-
-        setSelectedRouteIndex(nextSelectedIndex);
-
-        const selected = mapboxRoutes[nextSelectedIndex];
-        setRoute(selected ? mapboxRouteToRoute(selected) : null);
-      } catch (rankError) {
-        if (
-          rankError instanceof DOMException &&
-          rankError.name === "AbortError"
-        ) {
-          return;
-        }
-
-        if (!cancelled) {
-          setError(
-            rankError instanceof Error
-              ? rankError.message
-              : "Could not rank route alternatives.",
-          );
-          setRankedRoutes([]);
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoading(false);
-        }
-      }
+  useEffect(() => {
+    if (!rankQuery.error) {
+      return;
     }
 
-    void rankRoutes();
+    const syncRankError = window.setTimeout(() => {
+      setError(
+        rankQuery.error instanceof Error
+          ? rankQuery.error.message
+          : "Could not rank route alternatives.",
+      );
+      setRankedRoutes([]);
+    }, 0);
 
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [mapboxRoutes, weights.crime_weight, weights.light_weight]);
+    return () => window.clearTimeout(syncRankError);
+  }, [rankQuery.error]);
 
   const selectRouteByIndex = useCallback(
     (index: number) => {
@@ -222,7 +197,7 @@ export function useDirections(
     route,
     rankedRoutes,
     selectedRouteIndex,
-    isLoading,
+    isLoading: isLoading || rankQuery.isFetching,
     error,
     selectRouteByIndex,
   };
