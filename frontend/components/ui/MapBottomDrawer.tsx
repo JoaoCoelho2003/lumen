@@ -58,6 +58,8 @@ type MapBottomDrawerProps = {
   onProfileChange: (profile: TravelProfile) => void;
   onStartJourney: () => void;
   onStopNavigation: () => void;
+  onSafetyRoute: () => void;
+  isSafetyRouteLoading: boolean;
 };
 
 function ManeuverIcon({ type }: { type: string }) {
@@ -85,6 +87,8 @@ export function MapBottomDrawer({
   onProfileChange,
   onStartJourney,
   onStopNavigation,
+  onSafetyRoute,
+  isSafetyRouteLoading,
 }: MapBottomDrawerProps) {
   const showSearch = state !== "navigating";
   const [openSnapPoint, setOpenSnapPoint] =
@@ -286,7 +290,11 @@ export function MapBottomDrawer({
                 </Tabs>
               )}
 
-              <ActionButtons visible={state !== "preview"} />
+              <ActionButtons
+                visible={state !== "preview"}
+                onSafetyRoute={onSafetyRoute}
+                isSafetyRouteLoading={isSafetyRouteLoading}
+              />
             </div>
           )}
 
