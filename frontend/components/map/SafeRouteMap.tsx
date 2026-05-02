@@ -9,8 +9,7 @@ import Map, { type MapRef } from "react-map-gl";
 import { useSession } from "next-auth/react";
 import { useDirections } from "@/hooks/useDirections";
 import { useNavigation } from "@/hooks/useNavigation";
-import { usePins } from "@/hooks/usePins";
-import { useSafeSpots } from "@/hooks/useSafeSpots";
+import { useCreatePin, useGetPins } from "@/app/api/queries/pins";
 
 import {
   DAY_STYLE_START_HOUR,
@@ -45,6 +44,7 @@ import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
 import { NavigationBar } from "@/components/ui/NavigationBar";
 import { PinTags } from "@/components/ui/PinTags";
 import { RightSideDrawer } from "@/components/ui/RightSideDrawer";
+import { useSafeSpots } from "@/app/api/queries/safe-spots";
 
 function getPortugalHour() {
   const hour = new Intl.DateTimeFormat("en-GB", {
@@ -98,7 +98,8 @@ export function SafeRouteMap() {
 
   const { data: session } = useSession();
   const userId = session?.user?.name ?? undefined;
-  const { pins, addPin } = usePins();
+  const pins = useGetPins();
+  const addPin = useCreatePin();
   const [mapZoom, setMapZoom] = useState(DEFAULT_VIEW_STATE.zoom);
   const [safeSpotsEnabled, setSafeSpotsEnabled] = useState(true);
   const [selectedSafeSpotId, setSelectedSafeSpotId] = useState<string | null>(
