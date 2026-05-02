@@ -51,20 +51,46 @@ export function ActionButtons({
   return (
     <div className="mt-auto w-full pb-3">
       <div className="grid grid-cols-[1fr_auto] gap-3">
-        <Button
-          type="button"
-          size="lg"
-          onClick={onSafetyRoute}
-          disabled={isSafetyRouteLoading}
-          className="min-h-14 w-full gap-2 rounded-xl bg-success text-lg! font-semibold! text-success-foreground hover:bg-success/80 disabled:bg-muted disabled:text-muted-foreground"
-        >
-          {isSafetyRouteLoading ? (
-            <Loader2 className="h-5! w-5! animate-spin" />
-          ) : (
-            <RouteIcon className="h-5! w-5!" />
-          )}
-          Safety Route
-        </Button>
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              type="button"
+              size="lg"
+              disabled={isSafetyRouteLoading}
+              className="min-h-14 w-full gap-2 rounded-xl bg-success text-lg! font-semibold! text-success-foreground hover:bg-success/80 disabled:bg-muted disabled:text-muted-foreground"
+            >
+              {isSafetyRouteLoading ? (
+                <Loader2 className="h-5! w-5! animate-spin" />
+              ) : (
+                <RouteIcon className="h-5! w-5!" />
+              )}
+              Safety Route
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent size="sm">
+            <AlertDialogHeader>
+              <AlertDialogMedia className="bg-success/15 text-success">
+                <RouteIcon />
+              </AlertDialogMedia>
+              <AlertDialogTitle>Start safety routing?</AlertDialogTitle>
+              <AlertDialogDescription>
+                We will find the closest safe spot near you and start
+                navigation there.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel variant="outline" className="rounded-lg">
+                Cancel
+              </AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-success text-success-foreground rounded-lg hover:bg-success/80"
+                onClick={onSafetyRoute}
+              >
+                Start route
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         <AlertDialog>
           <AlertDialogTrigger asChild>
             <Button
