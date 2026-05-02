@@ -24,6 +24,7 @@ import {
   DrawerTitle,
 } from "@/components/ui/drawer";
 import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { SearchBar } from "@/components/ui/SearchBar";
 import { ActionButtons } from "@/components/ui/action-buttons";
@@ -58,6 +59,10 @@ type MapBottomDrawerProps = {
   onProfileChange: (profile: TravelProfile) => void;
   onStartJourney: () => void;
   onStopNavigation: () => void;
+  onSafetyRoute: () => void;
+  isSafetyRouteLoading: boolean;
+  safeSpotsEnabled: boolean;
+  onSafeSpotsEnabledChange: (enabled: boolean) => void;
 };
 
 function ManeuverIcon({ type }: { type: string }) {
@@ -85,6 +90,10 @@ export function MapBottomDrawer({
   onProfileChange,
   onStartJourney,
   onStopNavigation,
+  onSafetyRoute,
+  isSafetyRouteLoading,
+  safeSpotsEnabled,
+  onSafeSpotsEnabledChange,
 }: MapBottomDrawerProps) {
   const showSearch = state !== "navigating";
   const [openSnapPoint, setOpenSnapPoint] =
@@ -221,6 +230,21 @@ export function MapBottomDrawer({
                     <div className="px-4 py-6 text-sm text-muted-foreground">
                       <div className="space-y-4">
                         <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
+                          <div className="flex items-center justify-between gap-4">
+                            <div>
+                              <p className="text-sm font-medium">Safe spots</p>
+                              <p className="text-xs text-muted-foreground">
+                                Show nearby police, hospitals, and firefighters
+                              </p>
+                            </div>
+                            <Switch
+                              checked={safeSpotsEnabled}
+                              onCheckedChange={onSafeSpotsEnabledChange}
+                              aria-label="Toggle safe spots"
+                            />
+                          </div>
+                        </div>
+                        <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-sm font-medium">
@@ -286,7 +310,11 @@ export function MapBottomDrawer({
                 </Tabs>
               )}
 
-              <ActionButtons visible={state !== "preview"} />
+              <ActionButtons
+                visible={state !== "preview"}
+                onSafetyRoute={onSafetyRoute}
+                isSafetyRouteLoading={isSafetyRouteLoading}
+              />
             </div>
           )}
 

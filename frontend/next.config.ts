@@ -12,18 +12,25 @@ const withPWA = withPWAInit({
   },
 });
 
+const LUMEN_API = process.env.NEXT_PUBLIC_LUMEN_API_URL ?? "http://localhost:8000";
+
 const nextConfig: NextConfig = {
-  // Silences the "webpack config but no turbopack config" error.
-  // Turbopack is used in dev (where PWA is disabled anyway),
-  // webpack handles production builds where next-pwa/workbox runs.
-  turbopack: {},
-  allowedDevOrigins: [
-    "localhost",
-    "127.0.0.1",
-    "10.209.233.116",
-    "jayleen-hydrometrical-uncavalierly.ngrok-free.dev",
-    "3fea-148-69-201-206.ngrok-free.app",
-  ],
+    turbopack: {},
+    allowedDevOrigins: [
+        "localhost",
+        "127.0.0.1",
+        "10.209.233.116",
+        "jayleen-hydrometrical-uncavalierly.ngrok-free.dev",
+        "unsturdy-margarett-promising.ngrok-free.dev",
+    ],
+    async rewrites() {
+        return [
+            {
+                source: "/lumen-api/:path*",
+                destination: `${LUMEN_API}/:path*`,
+            },
+        ];
+    },
 };
 
 export default withPWA(nextConfig);
