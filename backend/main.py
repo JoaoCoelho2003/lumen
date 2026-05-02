@@ -8,6 +8,11 @@ from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
+from api.auth import router as auth_router
+from utils.security import NextAuthJWT
+from core.database import engine, Base
+from db.models import *
+
 
 load_dotenv()
 
@@ -49,6 +54,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
+
+@app.on_event("startup")
+async def on_startup():
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 origins = os.getenv(
     "FRONTEND_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000"
@@ -103,3 +113,13 @@ def serve_crime_streets():
         raise HTTPException(status_code=404, detail="Crime streets file not found")
     with open(CRIME_PATH, "rb") as f:
         return Response(content=f.read(), media_type="application/geo+json")
+    
+JWT = NextAuthJWT(secret=os.getenv("JWT_SECRET_KEY", "fallback_secret_for_dev"))
+
+
+app.include_router(auth_router)
+
+@app.get("/")
+async def root():
+    return {"message": "The darkness that surrounds is but a canvas, Lumen breathes, and all shadows flee"}
+

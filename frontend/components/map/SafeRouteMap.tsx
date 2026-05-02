@@ -3,7 +3,7 @@
 import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 
-import { Crosshair, Loader2 } from "lucide-react";
+import { Crosshair, LightbulbOff, Loader2, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { type MapRef } from "react-map-gl";
 import { useDirections } from "@/hooks/useDirections";
@@ -17,7 +17,11 @@ import {
   PORTUGAL_BOUNDS,
   PORTUGAL_TIME_ZONE,
 } from "@/lib/constants";
-import { calculateBearing, calculateDistance, getBoundsFromCoordinates } from "@/lib/mapbox";
+import {
+  calculateBearing,
+  calculateDistance,
+  getBoundsFromCoordinates,
+} from "@/lib/mapbox";
 import type {
   Coordinates,
   GeocodingResult,
@@ -28,10 +32,11 @@ import { CrimeLayer } from "@/components/map/CrimeLayer";
 import { HeatmapLayer } from "@/components/map/HeatmapLayer";
 import { MarkerLayer } from "@/components/map/MarkerLayer";
 import { RouteLayer } from "@/components/map/RouteLayer";
-import { BottomSheet } from "@/components/ui/BottomSheet";
 import { LayerToggles } from "@/components/ui/LayerToggles";
+import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
 import { NavigationBar } from "@/components/ui/NavigationBar";
-import { SearchBar } from "@/components/ui/SearchBar";
+import { PinTags } from "@/components/ui/PinTags";
+import { RightSideDrawer } from "@/components/ui/RightSideDrawer";
 
 function getPortugalHour() {
   const hour = new Intl.DateTimeFormat("en-GB", {
@@ -58,7 +63,6 @@ export function SafeRouteMap() {
   const [destinationLabel, setDestinationLabel] = useState("");
   const [profile, setProfile] = useState<TravelProfile>("driving");
   const [sheetState, setSheetState] = useState<NavigationState>("idle");
-  const [isNavigationSheetExpanded, setIsNavigationSheetExpanded] = useState(false);
   const [satelliteEnabled, setSatelliteEnabled] = useState(false);
   const [heatmapEnabled, setHeatmapEnabled] = useState(false);
   const [lightingEnabled, setLightingEnabled] = useState(false);
@@ -67,7 +71,11 @@ export function SafeRouteMap() {
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const { route, isLoading, error } = useDirections(origin, destination, profile);
+  const { route, isLoading, error } = useDirections(
+    origin,
+    destination,
+    profile,
+  );
   const activeRoute = origin && destination ? route : null;
   const navigation = useNavigation(activeRoute);
   const metricsOptions = {
@@ -82,10 +90,14 @@ export function SafeRouteMap() {
       return 0;
     }
 
-    return calculateDistance(navigation.position.coordinates, activeStep.maneuver.location);
+    return calculateDistance(
+      navigation.position.coordinates,
+      activeStep.maneuver.location,
+    );
   }, [activeStep, navigation.position]);
   const durationRemaining = activeRoute
-    ? (navigation.distanceRemaining / Math.max(activeRoute.distance, 1)) * activeRoute.duration
+    ? (navigation.distanceRemaining / Math.max(activeRoute.distance, 1)) *
+      activeRoute.duration
     : 0;
   const routeError = navigation.error ?? error;
 
@@ -102,7 +114,11 @@ export function SafeRouteMap() {
   }, [activeRoute, sheetState]);
 
   useEffect(() => {
-    if (!activeRoute || activeRoute.geometry.coordinates.length === 0 || !mapRef.current) {
+    if (
+      !activeRoute ||
+      activeRoute.geometry.coordinates.length === 0 ||
+      !mapRef.current
+    ) {
       return;
     }
 
@@ -168,16 +184,39 @@ export function SafeRouteMap() {
     setDestinationLabel(result.place_name);
   }
 
+  const handleDestinationLabelChange = useCallback((value: string) => {
+    setDestinationLabel(value);
+
+    if (!value) {
+      setDestination(null);
+      setSheetState("idle");
+    }
+  }, []);
+
+  const handleDestinationCoordinatesChange = useCallback(
+    (coordinates: Coordinates | null) => {
+      setDestination(coordinates);
+
+      if (!coordinates) {
+        setSheetState("idle");
+      }
+    },
+    [],
+  );
+
   function handleStartJourney() {
     if (!activeRoute || activeRoute.geometry.coordinates.length === 0) {
       return;
     }
 
     const startCoordinates = origin ?? activeRoute.geometry.coordinates[0];
-    const startBearing = navigation.position?.bearing ?? calculateBearing(
-      activeRoute.geometry.coordinates[0],
-      activeRoute.geometry.coordinates[1] ?? activeRoute.geometry.coordinates[0],
-    );
+    const startBearing =
+      navigation.position?.bearing ??
+      calculateBearing(
+        activeRoute.geometry.coordinates[0],
+        activeRoute.geometry.coordinates[1] ??
+          activeRoute.geometry.coordinates[0],
+      );
 
     mapRef.current?.easeTo({
       center: startCoordinates,
@@ -188,7 +227,6 @@ export function SafeRouteMap() {
     });
     setIsFocusedOnUser(true);
     setSheetState("navigating");
-    setIsNavigationSheetExpanded(false);
     navigation.startNavigation(startCoordinates);
   }
 
@@ -214,18 +252,25 @@ export function SafeRouteMap() {
     }
 
     if (!window.isSecureContext) {
-      setLocationError("GPS requires HTTPS on mobile browsers. Use HTTPS or test on localhost.");
+      setLocationError(
+        "GPS requires HTTPS on mobile browsers. Use HTTPS or test on localhost.",
+      );
       return;
     }
 
     setIsLocating(true);
     navigator.geolocation.getCurrentPosition(
       (location) => {
-        handleUseMyLocation([location.coords.longitude, location.coords.latitude]);
+        handleUseMyLocation([
+          location.coords.longitude,
+          location.coords.latitude,
+        ]);
         setIsLocating(false);
       },
       () => {
-        setLocationError("Could not get your location. Check browser permissions.");
+        setLocationError(
+          "Could not get your location. Check browser permissions.",
+        );
         setIsLocating(false);
       },
       { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 },
@@ -261,7 +306,6 @@ export function SafeRouteMap() {
 
     navigation.stopNavigation();
     setSheetState("idle");
-    setIsNavigationSheetExpanded(false);
     setDestination(null);
     setDestinationLabel("");
 
@@ -282,8 +326,42 @@ export function SafeRouteMap() {
     setIsFocusedOnUser(false);
   }
 
+  const pinTags = [
+    {
+      icon: TriangleAlert,
+      name: "Dangerous Area",
+      value: "dangerous-area",
+      colorClass: "text-destructive",
+      bgClass: "bg-destructive/15",
+      ringClass: "ring-destructive/30",
+    },
+    {
+      icon: LightbulbOff,
+      name: "Low light",
+      value: "low-light",
+      colorClass: "text-amber-500",
+      bgClass: "bg-amber-500/15",
+      ringClass: "ring-amber-500/30",
+    },
+  ];
+
   return (
-    <main className="relative h-dvh w-full overflow-hidden bg-black text-white">
+    <main className="relative h-dvh w-full overflow-hidden bg-background text-foreground">
+      {/* Navigation Top Bar */}
+      {sheetState === "navigating" && (
+        <NavigationBar
+          step={activeStep}
+          distanceToNextManeuver={distanceToNextManeuver}
+        />
+      )}
+
+      {locationError && (
+        <div className="pointer-events-none p-3 fixed inset-x-4 top-4 z-40 rounded-xl border border-destructive/40 bg-destructive/15 text-xs text-destructive shadow-2xl backdrop-blur-md">
+          {locationError}
+        </div>
+      )}
+
+      {/*Map*/}
       <Map
         ref={mapRef}
         mapboxAccessToken={MAPBOX_TOKEN}
@@ -307,31 +385,13 @@ export function SafeRouteMap() {
         <MarkerLayer origin={origin} destination={destination} position={navigation.position} />
       </Map>
 
-      {!MAPBOX_TOKEN ? (
-        <div className="pointer-events-auto fixed left-1/2 top-4 z-50 w-[calc(100%-1.5rem)] max-w-xl -translate-x-1/2 rounded-2xl border border-red-400/30 bg-red-950/90 px-4 py-3 text-sm text-red-100 shadow-2xl backdrop-blur-md">
-          NEXT_PUBLIC_MAPBOX_TOKEN is missing. Add it to .env.local and restart the dev server.
-        </div>
-      ) : null}
+      {/* side options */}
 
-      {sheetState === "idle" ? (
-        <div className="pointer-events-none fixed inset-x-0 bottom-4 z-40 px-3">
-          <div className="pointer-events-auto mx-auto max-w-2xl">
-            <SearchBar
-              destinationLabel={destinationLabel}
-              error={routeError}
-              onDestinationLabelChange={setDestinationLabel}
-              onDestinationSelect={handleDestinationSelect}
-              onDestinationCoordinatesChange={setDestination}
-            />
-          </div>
-        </div>
-      ) : null}
-
-      {!isFocusedOnUser ? (
+      <div className="flex flex-col gap-2 fixed z-10 left-3 top-1/4">
         <button
           type="button"
           onClick={recenterOnUser}
-          className="pointer-events-auto fixed left-3 top-1/2 z-50 flex h-12 w-12 -translate-y-32 items-center justify-center rounded-2xl border border-white/10 bg-[#0f1117]/95 text-blue-100 shadow-2xl backdrop-blur-md transition-all duration-300 ease-out hover:bg-blue-500/20"
+          className={`pointer-events-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-border/60 bg-card/95 text-primary shadow-2xl backdrop-blur-md transition-all duration-300 ease-out hover:bg-muted/40 ${isFocusedOnUser ? "opacity-0" : "opacity-100"}`}
           aria-label="Recenter on my location"
           title="Recenter"
         >
@@ -341,39 +401,39 @@ export function SafeRouteMap() {
             <Crosshair className="h-5 w-5" />
           )}
         </button>
-      ) : null}
 
-      {locationError ? (
-        <div className="pointer-events-none fixed left-16 top-1/2 z-50 max-w-[min(18rem,calc(100vw-5rem))] -translate-y-32 rounded-2xl border border-red-400/30 bg-red-950/90 px-3 py-2 text-xs text-red-100 shadow-2xl backdrop-blur-md">
-          {locationError}
-        </div>
-      ) : null}
+        <LayerToggles
+          satelliteEnabled={satelliteEnabled}
+          heatmapEnabled={heatmapEnabled}
+          lightingEnabled={lightingEnabled}
+          onSatelliteToggle={() => setSatelliteEnabled((enabled) => !enabled)}
+          onHeatmapToggle={() => setHeatmapEnabled((enabled) => !enabled)}
+          onLightingToggle={() => setLightingEnabled((enabled) => !enabled)}
+        />
+      </div>
 
-      {sheetState === "navigating" ? (
-        <NavigationBar step={activeStep} distanceToNextManeuver={distanceToNextManeuver} />
-      ) : null}
+      <RightSideDrawer
+        title="Pin Allert"
+        description="Alert about pins on the route. Tap to view details."
+        triggerLabel="Open quick settings"
+      >
+        <PinTags tags={pinTags} />
+      </RightSideDrawer>
 
-      <LayerToggles
-        satelliteEnabled={satelliteEnabled}
-        heatmapEnabled={heatmapEnabled}
-        lightingEnabled={lightingEnabled}
-        onSatelliteToggle={() => setSatelliteEnabled((enabled) => !enabled)}
-        onHeatmapToggle={() => setHeatmapEnabled((enabled) => !enabled)}
-        onLightingToggle={() => setLightingEnabled((enabled) => !enabled)}
-      />
-
-      <BottomSheet
+      <MapBottomDrawer
         state={sheetState}
         route={activeRoute}
         destinationName={destinationLabel}
+        destinationLabel={destinationLabel}
         profile={profile}
         isLoadingRoute={isLoading}
         error={routeError}
-        isExpanded={isNavigationSheetExpanded}
         distanceRemaining={navigation.distanceRemaining}
         durationRemaining={durationRemaining}
         activeStepIndex={navigation.stepIndex}
-        onToggleExpanded={() => setIsNavigationSheetExpanded((expanded) => !expanded)}
+        onDestinationLabelChange={handleDestinationLabelChange}
+        onDestinationSelect={handleDestinationSelect}
+        onDestinationCoordinatesChange={handleDestinationCoordinatesChange}
         onProfileChange={setProfile}
         onStartJourney={handleStartJourney}
         onStopNavigation={handleStopNavigation}

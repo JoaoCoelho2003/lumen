@@ -1,6 +1,15 @@
 "use client";
 
-import { Flame, Lightbulb, Map } from "lucide-react";
+import { CircleOff, Flame, Layers, Lightbulb, Map } from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 type LayerTogglesProps = {
   satelliteEnabled: boolean;
@@ -19,47 +28,95 @@ export function LayerToggles({
   onHeatmapToggle,
   onLightingToggle,
 }: LayerTogglesProps) {
+  const activeLayer = satelliteEnabled
+    ? "satellite"
+    : heatmapEnabled
+      ? "heatmap"
+      : lightingEnabled
+        ? "lighting"
+        : "none";
+
+  const handleLayerChange = (value: string) => {
+    if (value === "none") {
+      if (satelliteEnabled) onSatelliteToggle();
+      if (heatmapEnabled) onHeatmapToggle();
+      if (lightingEnabled) onLightingToggle();
+      return;
+    }
+
+    if (value === "satellite" && !satelliteEnabled) {
+      onSatelliteToggle();
+    }
+
+    if (value === "heatmap" && !heatmapEnabled) {
+      onHeatmapToggle();
+    }
+
+    if (value === "lighting" && !lightingEnabled) {
+      onLightingToggle();
+    }
+
+    if (value !== "satellite" && satelliteEnabled) onSatelliteToggle();
+    if (value !== "heatmap" && heatmapEnabled) onHeatmapToggle();
+    if (value !== "lighting" && lightingEnabled) onLightingToggle();
+  };
+
   return (
-    <div className="pointer-events-auto fixed left-3 top-1/2 z-30 flex -translate-y-1/2 flex-col gap-2 rounded-2xl border border-white/10 bg-[#0f1117]/95 p-2 text-white shadow-2xl backdrop-blur-md transition-all duration-300 ease-out">
-      <button
-        type="button"
-        onClick={onSatelliteToggle}
-        className={`rounded-xl p-3 transition-all duration-300 ease-out ${
-          satelliteEnabled
-            ? "bg-blue-500 text-white"
-            : "text-slate-400 hover:bg-white/10 hover:text-white"
-        }`}
-        title="Satellite"
-        aria-label="Toggle satellite map"
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button
+          type="button"
+          className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-border/60 bg-card/95 text-foreground shadow-2xl backdrop-blur-md transition-all duration-300 ease-out hover:bg-muted/40"
+          aria-label="Open layer options"
+          title="Layers"
+        >
+          <Layers className="h-5 w-5" />
+        </button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent
+        className="rounded-2xl w-fit p-0! min-w-0 border border-border/60 bg-card/95 text-foreground shadow-2xl backdrop-blur-md"
+        sideOffset={10}
       >
-        <Map className="h-5 w-5" />
-      </button>
-      <button
-        type="button"
-        onClick={onHeatmapToggle}
-        className={`rounded-xl p-3 transition-all duration-300 ease-out ${
-          heatmapEnabled
-            ? "bg-white/10 text-slate-300"
-            : "text-slate-500 hover:bg-white/10 hover:text-slate-300"
-        }`}
-        title="Heatmap"
-        aria-label="Toggle heatmap placeholder"
-      >
-        <Flame className="h-5 w-5" />
-      </button>
-      <button
-        type="button"
-        onClick={onLightingToggle}
-        className={`rounded-xl p-3 transition-all duration-300 ease-out ${
-          lightingEnabled
-            ? "bg-white/10 text-slate-300"
-            : "text-slate-500 hover:bg-white/10 hover:text-slate-300"
-        }`}
-        title="Lighting"
-        aria-label="Toggle lighting placeholder"
-      >
-        <Lightbulb className="h-5 w-5" />
-      </button>
-    </div>
+        <DropdownMenuLabel className="sr-only">Map layers</DropdownMenuLabel>
+        <DropdownMenuRadioGroup
+          value={activeLayer}
+          onValueChange={handleLayerChange}
+        >
+          <DropdownMenuRadioItem
+            value="none"
+            className="flex h-11 w-11 items-center justify-center rounded-xl p-3 text-muted-foreground transition-all duration-300 ease-out data-[state=checked]:bg-muted/60 data-[state=checked]:text-foreground hover:bg-muted/50 hover:text-foreground focus:bg-muted/60 focus:text-foreground [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
+            title="None"
+          >
+            <CircleOff className="h-5 w-5" />
+            <span className="sr-only">None</span>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem
+            value="satellite"
+            className="flex h-11 w-11 items-center justify-center rounded-xl p-3 text-muted-foreground transition-all duration-300 ease-out data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground hover:bg-muted/50 hover:text-foreground focus:bg-muted/60 focus:text-foreground [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
+            title="Satellite"
+          >
+            <Map className="h-5 w-5" />
+            <span className="sr-only">Satellite</span>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem
+            value="heatmap"
+            className="flex h-11 w-11 items-center justify-center rounded-xl p-3 text-muted-foreground transition-all duration-300 ease-out data-[state=checked]:bg-muted/60 data-[state=checked]:text-foreground hover:bg-muted/50 hover:text-foreground focus:bg-muted/60 focus:text-foreground [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
+            title="Heatmap"
+          >
+            <Flame className="h-5 w-5" />
+            <span className="sr-only">Heatmap</span>
+          </DropdownMenuRadioItem>
+          <DropdownMenuRadioItem
+            value="lighting"
+            className="flex h-11 w-11 items-center justify-center rounded-xl p-3 text-muted-foreground transition-all duration-300 ease-out data-[state=checked]:bg-muted/60 data-[state=checked]:text-foreground hover:bg-muted/50 hover:text-foreground focus:bg-muted/60 focus:text-foreground [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
+            title="Lighting"
+          >
+            <Lightbulb className="h-5 w-5" />
+            <span className="sr-only">Lighting</span>
+          </DropdownMenuRadioItem>
+        </DropdownMenuRadioGroup>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

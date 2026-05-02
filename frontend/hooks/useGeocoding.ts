@@ -100,12 +100,17 @@ export function useGeocoding(query: string): GeocodingState {
 
         setSuggestions(nextSuggestions);
       } catch (searchError) {
-        if (searchError instanceof DOMException && searchError.name === "AbortError") {
+        if (
+          searchError instanceof DOMException &&
+          searchError.name === "AbortError"
+        ) {
           return;
         }
 
         setSuggestions([]);
-        setError(searchError instanceof Error ? searchError.message : "Search failed.");
+        setError(
+          searchError instanceof Error ? searchError.message : "Search failed.",
+        );
       } finally {
         setIsLoading(false);
       }
