@@ -2,6 +2,28 @@ import base64
 import hashlib
 import hmac
 import secrets
+from typing import Any, Dict, Optional
+
+from jose import jwt
+from jose.exceptions import JWTError
+
+
+class NextAuthJWT:
+    def __init__(self, secret: str):
+        self.secret = secret
+        self.algorithms = ["HS256"]
+
+    def decode(self, token: str) -> Optional[Dict[str, Any]]:
+        try:
+            return jwt.decode(
+                token,
+                self.secret,
+                algorithms=self.algorithms,
+                options={"verify_aud": False},
+            )
+        except JWTError:
+            return None
+
 
 _PBKDF2_ITERATIONS = 390000
 _PBKDF2_ALGORITHM = "sha256"

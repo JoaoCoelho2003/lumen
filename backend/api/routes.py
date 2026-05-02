@@ -92,7 +92,7 @@ def _load_scorer() -> LightFirstRouteScorer:
         if not data_dir.is_absolute():
             data_dir = Path(__file__).resolve().parents[1] / data_dir
     else:
-        data_dir = Path(__file__).resolve().parents[1] / "data"
+        data_dir = Path(__file__).resolve().parents[1]
     scorer = get_scorer(data_dir)
     scorer.load_data()
     return scorer
@@ -196,7 +196,7 @@ async def rank_mapbox_routes(request: MapboxDirectionsRequest) -> MapboxRouteRan
                 scorer.score_route(
                     route,
                     name=route_name,
-                    duration_minutes=route.get("duration"),
+                    duration_minutes=route.get("duration", None) / 60.0 if route.get("duration") is not None else None,
                     distance_km=route.get("distance", None) / 1000.0 if route.get("distance") is not None else None,
                     light_buffer_m=request.light_buffer_m,
                     sample_spacing_m=request.sample_spacing_m,

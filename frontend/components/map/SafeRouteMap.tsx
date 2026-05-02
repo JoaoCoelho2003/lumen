@@ -6,9 +6,10 @@ import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 import { Crosshair, LightbulbOff, Loader2, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { type MapRef } from "react-map-gl";
-import { useDirections } from "@/hooks/useDirections";
-import { useRouteWeights } from "@/hooks/useRouteWeights";
-import { useNavigation } from "@/hooks/useNavigation";
+import { useDirections } from "../../hooks/useDirections";
+import { useRouteWeights } from "../../hooks/useRouteWeights";
+import { useNavigation } from "../../hooks/useNavigation";
+import { useSafeSpots } from "../../hooks/useSafeSpots";
 import {
   DAY_STYLE_START_HOUR,
   DEFAULT_VIEW_STATE,
@@ -17,25 +18,26 @@ import {
   NIGHT_STYLE_START_HOUR,
   PORTUGAL_BOUNDS,
   PORTUGAL_TIME_ZONE,
-} from "@/lib/constants";
+} from "../../lib/constants";
 import {
   calculateBearing,
   calculateDistance,
   getBoundsFromCoordinates,
-} from "@/lib/mapbox";
+} from "../../lib/mapbox";
 import type {
   Coordinates,
   GeocodingResult,
   NavigationState,
   TravelProfile,
-} from "@/lib/types";
-import { MarkerLayer } from "@/components/map/MarkerLayer";
-import { RouteLayer } from "@/components/map/RouteLayer";
-import { LayerToggles } from "@/components/ui/LayerToggles";
-import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
-import { NavigationBar } from "@/components/ui/NavigationBar";
-import { PinTags } from "@/components/ui/PinTags";
-import { RightSideDrawer } from "@/components/ui/RightSideDrawer";
+} from "../../lib/types";
+import { CrimeLayer } from "../../components/map/CrimeLayer";
+import { HeatmapLayer } from "../../components/map/HeatmapLayer";
+import { MarkerLayer } from "../../components/map/MarkerLayer";
+import { RouteLayer } from "../../components/map/RouteLayer";
+import { LayerToggles } from "../../components/ui/LayerToggles";
+import { MapBottomDrawer } from "../../components/ui/MapBottomDrawer";
+import { PinTags } from "../../components/ui/PinTags";
+import { RightSideDrawer } from "../../components/ui/RightSideDrawer";
 
 function getPortugalHour() {
   const hour = new Intl.DateTimeFormat("en-GB", {
@@ -55,6 +57,12 @@ function getTimeBasedMapStyle(hour: number) {
   return MAP_STYLES.dark;
 }
 
+function coordinatesMatch(first: Coordinates, second: Coordinates) {
+  return first[0] === second[0] && first[1] === second[1];
+}
+
+const SAFE_SPOT_MARKER_MIN_ZOOM = 13;
+
 export function SafeRouteMap() {
   const mapRef = useRef<MapRef | null>(null);
   const [origin, setOrigin] = useState<Coordinates | null>(null);
@@ -69,6 +77,13 @@ export function SafeRouteMap() {
   const [isFocusedOnUser, setIsFocusedOnUser] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [mapZoom, setMapZoom] = useState(DEFAULT_VIEW_STATE.zoom);
+  const [selectedSafeSpotId, setSelectedSafeSpotId] = useState<string | null>(
+    null,
+  );
+  const [shouldStartSafeRoute, setShouldStartSafeRoute] = useState(false);
+  const [shouldAutoStartRoute, setShouldAutoStartRoute] = useState(false);
+  const lastSafeSpotOriginRef = useRef<Coordinates | null>(null);
 
   const {
     weights,
@@ -95,7 +110,9 @@ export function SafeRouteMap() {
     profile,
     weights,
   );
-  const activeRoute = origin && destination ? route : null;
+  const { safeSpots, isLoadingSafeSpots, safeSpotsError, findSafeSpots } =
+    useSafeSpots();
+  const activeRoute = origin && destination && route ? route : null;
   const navigation = useNavigation(activeRoute);
   const metricsOptions = {
     performanceMetricsCollection: false,
@@ -118,10 +135,10 @@ export function SafeRouteMap() {
     ? (navigation.distanceRemaining / Math.max(activeRoute.distance, 1)) *
       activeRoute.duration
     : 0;
-  const routeError = navigation.error ?? error;
+  const routeError = navigation.error ?? error ?? safeSpotsError;
 
   useEffect(() => {
-    if (activeRoute && sheetState !== "navigating") {
+    if (activeRoute && sheetState !== "navigating" && !shouldStartSafeRoute) {
       const previewTransition = window.setTimeout(() => {
         setSheetState("preview");
       }, 0);
@@ -130,7 +147,7 @@ export function SafeRouteMap() {
     }
 
     return undefined;
-  }, [activeRoute, sheetState]);
+  }, [activeRoute, sheetState, shouldStartSafeRoute]);
 
   useEffect(() => {
     if (
@@ -198,9 +215,27 @@ export function SafeRouteMap() {
     return () => window.clearInterval(clock);
   }, []);
 
+  useEffect(() => {
+    if (!origin) {
+      return;
+    }
+
+    const lastSafeSpotOrigin = lastSafeSpotOriginRef.current;
+
+    if (lastSafeSpotOrigin && calculateDistance(lastSafeSpotOrigin, origin) < 50) {
+      return;
+    }
+
+    lastSafeSpotOriginRef.current = origin;
+    void findSafeSpots(origin).catch(() => undefined);
+  }, [findSafeSpots, origin]);
+
   function handleDestinationSelect(result: GeocodingResult) {
     setDestination(result.center);
     setDestinationLabel(result.place_name);
+    setSelectedSafeSpotId(null);
+    setShouldStartSafeRoute(false);
+    setShouldAutoStartRoute(false);
   }
 
   const handleDestinationLabelChange = useCallback((value: string) => {
@@ -209,12 +244,17 @@ export function SafeRouteMap() {
     if (!value) {
       setDestination(null);
       setSheetState("idle");
+      setSelectedSafeSpotId(null);
+      setShouldStartSafeRoute(false);
     }
   }, []);
 
   const handleDestinationCoordinatesChange = useCallback(
     (coordinates: Coordinates | null) => {
       setDestination(coordinates);
+      setSelectedSafeSpotId(null);
+      setShouldStartSafeRoute(false);
+      setShouldAutoStartRoute(false);
 
       if (!coordinates) {
         setSheetState("idle");
@@ -223,7 +263,7 @@ export function SafeRouteMap() {
     [],
   );
 
-  function handleStartJourney() {
+  const handleStartJourney = useCallback(() => {
     if (!activeRoute || activeRoute.geometry.coordinates.length === 0) {
       return;
     }
@@ -247,7 +287,7 @@ export function SafeRouteMap() {
     setIsFocusedOnUser(true);
     setSheetState("navigating");
     navigation.startNavigation(startCoordinates);
-  }
+  }, [activeRoute, navigation, origin]);
 
   const handleUseMyLocation = useCallback((coordinates: Coordinates) => {
     setOrigin(coordinates);
@@ -262,39 +302,138 @@ export function SafeRouteMap() {
     });
   }, []);
 
-  const requestMyLocation = useCallback(() => {
+  const requestCurrentLocation = useCallback(() => {
     setLocationError(null);
 
     if (!navigator.geolocation) {
-      setLocationError("Your browser does not support location access.");
-      return;
+      const message = "Your browser does not support location access.";
+      setLocationError(message);
+      return Promise.reject(new Error(message));
     }
 
     if (!window.isSecureContext) {
-      setLocationError(
-        "GPS requires HTTPS on mobile browsers. Use HTTPS or test on localhost.",
-      );
-      return;
+      const message =
+        "GPS requires HTTPS on mobile browsers. Use HTTPS or test on localhost.";
+      setLocationError(message);
+      return Promise.reject(new Error(message));
     }
 
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      (location) => {
-        handleUseMyLocation([
-          location.coords.longitude,
-          location.coords.latitude,
-        ]);
-        setIsLocating(false);
-      },
-      () => {
-        setLocationError(
-          "Could not get your location. Check browser permissions.",
-        );
-        setIsLocating(false);
-      },
-      { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 },
-    );
+    return new Promise<Coordinates>((resolve, reject) => {
+      navigator.geolocation.getCurrentPosition(
+        (location) => {
+          const coordinates: Coordinates = [
+            location.coords.longitude,
+            location.coords.latitude,
+          ];
+
+          handleUseMyLocation(coordinates);
+          setIsLocating(false);
+          resolve(coordinates);
+        },
+        () => {
+          const message =
+            "Could not get your location. Check browser permissions.";
+
+          setLocationError(message);
+          setIsLocating(false);
+          reject(new Error(message));
+        },
+        { enableHighAccuracy: true, timeout: 20_000, maximumAge: 0 },
+      );
+    });
   }, [handleUseMyLocation]);
+
+  const requestMyLocation = useCallback(() => {
+    void requestCurrentLocation().catch(() => undefined);
+  }, [requestCurrentLocation]);
+
+  const handleSafetyRoute = useCallback(async () => {
+    try {
+      setLocationError(null);
+      setShouldStartSafeRoute(false);
+      const currentOrigin = origin ?? (await requestCurrentLocation());
+      const nearbySafeSpots = await findSafeSpots(currentOrigin);
+      const closestSafeSpot = nearbySafeSpots[0];
+
+      if (!closestSafeSpot) {
+        setLocationError("No nearby safe spots were found.");
+        return;
+      }
+
+      setOrigin(currentOrigin);
+      setSelectedSafeSpotId(closestSafeSpot.id);
+      setDestination(closestSafeSpot.coordinates);
+      setDestinationLabel(`Safety Route: ${closestSafeSpot.name}`);
+      setProfile("walking");
+      setSheetState("preview");
+      setShouldStartSafeRoute(true);
+    } catch (safeRouteError) {
+      setShouldStartSafeRoute(false);
+      setLocationError(
+        safeRouteError instanceof Error
+          ? safeRouteError.message
+          : "Could not start a safety route.",
+      );
+    }
+  }, [findSafeSpots, origin, requestCurrentLocation]);
+
+  useEffect(() => {
+    if (!shouldStartSafeRoute || isLoading || !activeRoute || routeError) {
+      return;
+    }
+
+    const startSafetyRoute = window.setTimeout(() => {
+      handleStartJourney();
+      setShouldStartSafeRoute(false);
+    }, 0);
+
+    return () => window.clearTimeout(startSafetyRoute);
+  }, [
+    activeRoute,
+    handleStartJourney,
+    isLoading,
+    routeError,
+    shouldStartSafeRoute,
+  ]);
+
+  useEffect(() => {
+    if (
+      !shouldAutoStartRoute ||
+      shouldStartSafeRoute ||
+      isLoading ||
+      !activeRoute ||
+      routeError
+    ) {
+      return;
+    }
+
+    const autoStartRoute = window.setTimeout(() => {
+      handleStartJourney();
+      setShouldAutoStartRoute(false);
+    }, 0);
+
+    return () => window.clearTimeout(autoStartRoute);
+  }, [
+    activeRoute,
+    handleStartJourney,
+    isLoading,
+    routeError,
+    shouldAutoStartRoute,
+    shouldStartSafeRoute,
+  ]);
+
+  useEffect(() => {
+    if (shouldStartSafeRoute && routeError) {
+      const resetSafetyRoute = window.setTimeout(() => {
+        setShouldStartSafeRoute(false);
+      }, 0);
+
+      return () => window.clearTimeout(resetSafetyRoute);
+    }
+
+    return undefined;
+  }, [routeError, shouldStartSafeRoute]);
 
   const recenterOnUser = useCallback(() => {
     if (sheetState === "navigating" && navigation.position) {
@@ -327,6 +466,8 @@ export function SafeRouteMap() {
     setSheetState("idle");
     setDestination(null);
     setDestinationLabel("");
+    setSelectedSafeSpotId(null);
+    setShouldStartSafeRoute(false);
 
     if (currentCoordinates) {
       setOrigin(currentCoordinates);
@@ -366,14 +507,6 @@ export function SafeRouteMap() {
 
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-background text-foreground">
-      {/* Navigation Top Bar */}
-      {sheetState === "navigating" && (
-        <NavigationBar
-          step={activeStep}
-          distanceToNextManeuver={distanceToNextManeuver}
-        />
-      )}
-
       {locationError && (
         <div className="pointer-events-none p-3 fixed inset-x-4 top-4 z-40 rounded-xl border border-destructive/40 bg-destructive/15 text-xs text-destructive shadow-2xl backdrop-blur-md">
           {locationError}
@@ -397,7 +530,12 @@ export function SafeRouteMap() {
             setIsFocusedOnUser(false);
           }
         }}
+        onZoom={(event) => {
+          setMapZoom(event.viewState.zoom);
+        }}
       >
+        <CrimeLayer enabled={heatmapEnabled} hour={portugalHour} />
+        <HeatmapLayer enabled={lightingEnabled} />
         <RouteLayer
           route={activeRoute}
           distanceTravelled={navigation.distanceTravelled}
@@ -406,6 +544,12 @@ export function SafeRouteMap() {
           origin={origin}
           destination={destination}
           position={navigation.position}
+          safeSpots={
+            mapZoom >= SAFE_SPOT_MARKER_MIN_ZOOM || selectedSafeSpotId
+              ? safeSpots
+              : []
+          }
+          selectedSafeSpotId={selectedSafeSpotId}
         />
       </Map>
 
@@ -472,6 +616,8 @@ export function SafeRouteMap() {
         onSaveWeights={saveWeights}
         onStartJourney={handleStartJourney}
         onStopNavigation={handleStopNavigation}
+        onSafetyRoute={handleSafetyRoute}
+        isSafetyRouteLoading={isLoadingSafeSpots || isLocating}
       />
     </main>
   );

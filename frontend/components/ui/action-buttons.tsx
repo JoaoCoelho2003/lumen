@@ -1,6 +1,13 @@
 "use client";
 
-import { PhoneCall, Route as RouteIcon, Siren, X, Zap } from "lucide-react";
+import {
+  Loader2,
+  PhoneCall,
+  Route as RouteIcon,
+  Siren,
+  X,
+  Zap,
+} from "lucide-react";
 import { useState } from "react";
 import {
   AlertDialog,
@@ -26,9 +33,15 @@ import { Button } from "@/components/ui/button";
 
 type ActionButtonsProps = {
   visible?: boolean;
+  onSafetyRoute: () => void;
+  isSafetyRouteLoading?: boolean;
 };
 
-export function ActionButtons({ visible = true }: ActionButtonsProps) {
+export function ActionButtons({
+  visible = true,
+  onSafetyRoute,
+  isSafetyRouteLoading = false,
+}: ActionButtonsProps) {
   const [sosOpen, setSosOpen] = useState(false);
 
   if (!visible) {
@@ -43,9 +56,14 @@ export function ActionButtons({ visible = true }: ActionButtonsProps) {
             <Button
               type="button"
               size="lg"
-              className="min-h-14 w-full gap-2 rounded-xl bg-success text-lg! font-semibold! text-success-foreground hover:bg-success/80"
+              disabled={isSafetyRouteLoading}
+              className="min-h-14 w-full gap-2 rounded-xl bg-success text-lg! font-semibold! text-success-foreground hover:bg-success/80 disabled:bg-muted disabled:text-muted-foreground"
             >
-              <RouteIcon className="h-5! w-5!" />
+              {isSafetyRouteLoading ? (
+                <Loader2 className="h-5! w-5! animate-spin" />
+              ) : (
+                <RouteIcon className="h-5! w-5!" />
+              )}
               Safety Route
             </Button>
           </AlertDialogTrigger>
@@ -56,16 +74,19 @@ export function ActionButtons({ visible = true }: ActionButtonsProps) {
               </AlertDialogMedia>
               <AlertDialogTitle>Start safety routing?</AlertDialogTitle>
               <AlertDialogDescription>
-                This is where the safety routing API will be called. Continue to
-                simulate the action.
+                We will find the closest safe spot near you and start
+                navigation there.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
               <AlertDialogCancel variant="outline" className="rounded-lg">
                 Cancel
               </AlertDialogCancel>
-              <AlertDialogAction className="bg-success text-success-foreground rounded-lg hover:bg-success/80">
-                Continue
+              <AlertDialogAction
+                className="bg-success text-success-foreground rounded-lg hover:bg-success/80"
+                onClick={onSafetyRoute}
+              >
+                Start route
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

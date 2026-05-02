@@ -248,7 +248,13 @@ export function mapboxRouteToRoute(route: MapboxDirectionsRoute): Route {
     })),
   );
 
+  const origin = route.geometry.coordinates[0] ?? [0, 0];
+  const destination =
+    route.geometry.coordinates[route.geometry.coordinates.length - 1] ?? origin;
+
   return {
+    origin,
+    destination,
     geometry: route.geometry,
     steps,
     distance: route.distance,

@@ -79,11 +79,11 @@ class LightFirstRouteScorer:
     def __init__(
         self,
         data_dir: Optional[Path] = None,
-        lights_filename: str = "coimbra_lights.geojson",
-        crimes_filename: str = "coimbra_crimes.geojson",
+        lights_filename: str = "coimbra_luminarias_completo.geojson",
+        crimes_filename: str = "coimbra_crime_streets.geojson",
         target_epsg: int = 3763,
     ) -> None:
-        base_dir = Path(data_dir) if data_dir is not None else Path(__file__).resolve().parents[1] / "data"
+        base_dir = Path(data_dir) if data_dir is not None else Path(__file__).resolve().parents[1]
         self.data_dir = base_dir
         self.lights_path = self.data_dir / lights_filename
         self.crimes_path = self.data_dir / crimes_filename

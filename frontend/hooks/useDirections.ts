@@ -1,9 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { fetchBackendJson } from "@/lib/backend";
-import { MAPBOX_TOKEN } from "@/lib/constants";
-import { mapboxRouteToRoute } from "@/lib/mapbox";
+import { fetchBackendJson } from "../lib/backend";
+import { MAPBOX_TOKEN } from "../lib/constants";
+import { mapboxRouteToRoute } from "../lib/mapbox";
 import type {
   Coordinates,
   MapboxDirectionsRoute,
@@ -13,7 +13,7 @@ import type {
   Route,
   RouteWeights,
   TravelProfile,
-} from "@/lib/types";
+} from "../lib/types";
 
 type DirectionsState = {
   route: Route | null;
@@ -70,6 +70,7 @@ export function useDirections(
 
     async function fetchRoute() {
       setIsLoading(true);
+      setRoute(null);
       setError(null);
 
       try {
@@ -98,7 +99,7 @@ export function useDirections(
           throw new Error("No route found for those locations.");
         }
 
-        const nextRoutes = data.routes ?? [];
+        const nextRoutes = (data.routes ?? []).slice(0, 3);
 
         setMapboxRoutes(nextRoutes);
         setRankedRoutes([]);
@@ -156,6 +157,7 @@ export function useDirections(
               response: { routes: mapboxRoutes },
               light_weight: weights.light_weight,
               crime_weight: weights.crime_weight,
+              sample_spacing_m: 50,
             }),
             signal: controller.signal,
           },
@@ -165,12 +167,12 @@ export function useDirections(
           return;
         }
 
-        setRankedRoutes(ranked.ranked_routes);
-
         const nextSelectedIndex =
           ranked.best_route_index ??
           ranked.ranked_routes[0]?.source_route_index ??
           0;
+
+        setRankedRoutes(ranked.ranked_routes.slice(0, 3));
 
         setSelectedRouteIndex(nextSelectedIndex);
 

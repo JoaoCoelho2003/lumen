@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { fetchBackendJson } from "@/lib/backend";
-import type { RouteWeights } from "@/lib/types";
+import { fetchBackendJson } from "../lib/backend";
+import type { RouteWeights } from "../lib/types";
 
 type RouteWeightsState = {
   weights: RouteWeights;

@@ -71,6 +71,8 @@ type MapBottomDrawerProps = {
   onSaveWeights: () => Promise<void>;
   onStartJourney: () => void;
   onStopNavigation: () => void;
+  onSafetyRoute: () => void;
+  isSafetyRouteLoading: boolean;
 };
 
 function ManeuverIcon({ type }: { type: string }) {
@@ -109,6 +111,8 @@ export function MapBottomDrawer({
   onSaveWeights,
   onStartJourney,
   onStopNavigation,
+  onSafetyRoute,
+  isSafetyRouteLoading,
 }: MapBottomDrawerProps) {
   const showSearch = state !== "navigating";
   const [openSnapPoint, setOpenSnapPoint] =
@@ -223,49 +227,17 @@ export function MapBottomDrawer({
                   >
                     <div className="space-y-3">
                       {rankedRoutes.length > 0 ? (
-                        rankedRoutes.slice(0, 3).map((candidate, index) => {
-                          const sourceIndex = candidate.source_route_index ?? index;
-                          const isSelected = selectedRouteIndex === sourceIndex;
-
-                          return (
-                            <button
-                              type="button"
-                              key={`${sourceIndex}-${candidate.score}`}
-                              onClick={() => onSelectRoute(sourceIndex)}
-                              className={`w-full rounded-2xl border px-4 py-4 text-left transition-all duration-300 ease-out ${isSelected ? "border-primary bg-primary/10 shadow-lg" : "border-border/60 bg-background/50 hover:border-primary/40 hover:bg-muted/40"}`}
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div className="min-w-0">
-                                  <p className="text-sm font-semibold text-foreground">
-                                    Route {index + 1}
-                                  </p>
-                                  <p className="mt-1 text-xs text-muted-foreground">
-                                    {Math.round(candidate.score_percent)}% safety · {Math.round(candidate.coverage * 100)}% light coverage
-                                  </p>
-                                </div>
-                                <div className="rounded-full bg-foreground/5 px-2.5 py-1 text-xs font-semibold text-foreground">
-                                  {candidate.score.toFixed(1)} score
-                                </div>
-                              </div>
-
-                              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
-                                <span>Dark run: {Math.round(candidate.longest_dark_run_ratio * 100)}%</span>
-                                <span>Light density: {candidate.light_density_per_km.toFixed(1)}/km</span>
-                                <span>Crime density: {candidate.crime_density_per_km.toFixed(1)}/km</span>
-                                <span>{isSelected ? "Selected route" : "Tap to use"}</span>
-                              </div>
-
-                              {candidate.notes.length > 0 ? (
-                                <p className="mt-3 text-xs text-muted-foreground">
-                                  {candidate.notes[0]}
-                                </p>
-                              ) : null}
-                            </button>
-                          );
-                        })
+                        <div className="w-full rounded-2xl border border-primary bg-primary/10 px-4 py-4 text-left shadow-lg">
+                          <p className="text-sm font-semibold text-foreground">
+                            Route selected
+                          </p>
+                          <p className="mt-1 text-xs text-muted-foreground">
+                            The best route from the available alternatives was selected automatically.
+                          </p>
+                        </div>
                       ) : (
                         <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
-                          Choose a destination to compare up to three safe route options.
+                          Choose one destination to rank Mapbox alternatives and use the safest route.
                         </div>
                       )}
                     </div>
@@ -346,13 +318,44 @@ export function MapBottomDrawer({
                             {isWeightsSaving ? "Saving..." : "Save weights"}
                           </button>
                         </div>
+
+                        {rankedRoutes.length > 0 ? (
+                          <details className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
+                            <summary className="cursor-pointer text-xs font-semibold text-muted-foreground">
+                              Debug route ranking details
+                            </summary>
+                            <div className="mt-3 space-y-3 text-xs text-muted-foreground">
+                              {rankedRoutes.map((candidate, index) => {
+                                const sourceIndex = candidate.source_route_index ?? index;
+                                const isSelected = selectedRouteIndex === sourceIndex;
+                                return (
+                                  <div key={`${sourceIndex}-${candidate.score}`} className="rounded-md border border-border/50 p-2">
+                                    <p className="font-medium text-foreground">
+                                      Candidate {index + 1} {isSelected ? "(selected)" : ""}
+                                    </p>
+                                    <p>score: {candidate.score.toFixed(2)}</p>
+                                    <p>score_percent: {candidate.score_percent.toFixed(2)}</p>
+                                    <p>coverage: {(candidate.coverage * 100).toFixed(1)}%</p>
+                                    <p>light_density: {candidate.light_density_per_km.toFixed(2)}/km</p>
+                                    <p>crime_density: {candidate.crime_density_per_km.toFixed(2)}/km</p>
+                                    {candidate.notes[0] ? <p>note: {candidate.notes[0]}</p> : null}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </details>
+                        ) : null}
                       </div>
                     </div>
                   </TabsContent>
                 </Tabs>
               )}
 
-              <ActionButtons visible={state !== "preview"} />
+              <ActionButtons
+                visible={state !== "preview"}
+                onSafetyRoute={onSafetyRoute}
+                isSafetyRouteLoading={isSafetyRouteLoading}
+              />
             </div>
           )}
 
@@ -483,7 +486,7 @@ export function MapBottomDrawer({
                   className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-all duration-300 ease-out hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
                 >
                   <RouteIcon className="h-5 w-5" />
-                  Start Journey
+                  Start Trip
                 </button>
               </div>
             </div>
