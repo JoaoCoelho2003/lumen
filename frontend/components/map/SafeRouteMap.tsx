@@ -7,6 +7,7 @@ import { Crosshair, LightbulbOff, Loader2, TriangleAlert } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Map, { type MapRef } from "react-map-gl";
 import { useDirections } from "@/hooks/useDirections";
+import { useRouteWeights } from "@/hooks/useRouteWeights";
 import { useNavigation } from "@/hooks/useNavigation";
 import {
   DAY_STYLE_START_HOUR,
@@ -69,10 +70,30 @@ export function SafeRouteMap() {
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
 
-  const { route, isLoading, error } = useDirections(
+  const {
+    weights,
+    draftWeights,
+    isLoading: isWeightsLoading,
+    isSaving: isWeightsSaving,
+    error: weightsError,
+    hasPendingChanges: hasPendingWeightChanges,
+    setLightWeight,
+    setCrimeWeight,
+    saveWeights,
+  } = useRouteWeights();
+
+  const {
+    route,
+    rankedRoutes,
+    selectedRouteIndex,
+    isLoading,
+    error,
+    selectRouteByIndex,
+  } = useDirections(
     origin,
     destination,
     profile,
+    weights,
   );
   const activeRoute = origin && destination ? route : null;
   const navigation = useNavigation(activeRoute);
@@ -426,11 +447,18 @@ export function SafeRouteMap() {
       <MapBottomDrawer
         state={sheetState}
         route={activeRoute}
+        rankedRoutes={rankedRoutes}
+        selectedRouteIndex={selectedRouteIndex}
         destinationName={destinationLabel}
         destinationLabel={destinationLabel}
         profile={profile}
         isLoadingRoute={isLoading}
         error={routeError}
+        weights={draftWeights}
+        isWeightsLoading={isWeightsLoading}
+        isWeightsSaving={isWeightsSaving}
+        weightsError={weightsError}
+        hasPendingWeightChanges={hasPendingWeightChanges}
         distanceRemaining={navigation.distanceRemaining}
         durationRemaining={durationRemaining}
         activeStepIndex={navigation.stepIndex}
@@ -438,6 +466,10 @@ export function SafeRouteMap() {
         onDestinationSelect={handleDestinationSelect}
         onDestinationCoordinatesChange={handleDestinationCoordinatesChange}
         onProfileChange={setProfile}
+        onSelectRoute={selectRouteByIndex}
+        onLightWeightChange={setLightWeight}
+        onCrimeWeightChange={setCrimeWeight}
+        onSaveWeights={saveWeights}
         onStartJourney={handleStartJourney}
         onStopNavigation={handleStopNavigation}
       />

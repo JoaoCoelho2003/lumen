@@ -1,34 +1,49 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { fetchBackendJson } from "@/lib/backend";
 import { MAPBOX_TOKEN } from "@/lib/constants";
+import { mapboxRouteToRoute } from "@/lib/mapbox";
 import type {
   Coordinates,
+  MapboxDirectionsRoute,
   MapboxDirectionsResponse,
+  MapboxRouteRankResponse,
+  RankedRoute,
   Route,
-  RouteStep,
+  RouteWeights,
   TravelProfile,
 } from "@/lib/types";
 
 type DirectionsState = {
   route: Route | null;
+  rankedRoutes: RankedRoute[];
+  selectedRouteIndex: number | null;
   isLoading: boolean;
   error: string | null;
+  selectRouteByIndex: (index: number) => void;
 };
 
 export function useDirections(
   origin: Coordinates | null,
   destination: Coordinates | null,
   profile: TravelProfile,
+  weights: RouteWeights,
 ): DirectionsState {
   const [route, setRoute] = useState<Route | null>(null);
+  const [rankedRoutes, setRankedRoutes] = useState<RankedRoute[]>([]);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [mapboxRoutes, setMapboxRoutes] = useState<MapboxDirectionsRoute[]>([]);
 
   useEffect(() => {
     if (!origin || !destination) {
       const reset = window.setTimeout(() => {
         setRoute(null);
+        setRankedRoutes([]);
+        setSelectedRouteIndex(null);
+        setMapboxRoutes([]);
         setIsLoading(false);
         setError(null);
       }, 0);
@@ -39,6 +54,9 @@ export function useDirections(
     if (!MAPBOX_TOKEN) {
       const reset = window.setTimeout(() => {
         setRoute(null);
+        setRankedRoutes([]);
+        setSelectedRouteIndex(null);
+        setMapboxRoutes([]);
         setIsLoading(false);
         setError("Configure NEXT_PUBLIC_MAPBOX_TOKEN to calculate routes.");
       }, 0);
@@ -60,6 +78,7 @@ export function useDirections(
           geometries: "geojson",
           steps: "true",
           overview: "full",
+          alternatives: "true",
           access_token: MAPBOX_TOKEN,
           language: "pt",
         });
@@ -79,25 +98,12 @@ export function useDirections(
           throw new Error("No route found for those locations.");
         }
 
-        const steps: RouteStep[] = firstRoute.legs.flatMap((leg) =>
-          leg.steps.map((step) => ({
-            instruction: step.maneuver.instruction ?? "Continue",
-            maneuver: {
-              type: step.maneuver.type,
-              modifier: step.maneuver.modifier,
-              location: step.maneuver.location,
-            },
-            distance: step.distance,
-            duration: step.duration,
-          })),
-        );
+        const nextRoutes = data.routes ?? [];
 
-        setRoute({
-          geometry: firstRoute.geometry,
-          steps,
-          distance: firstRoute.distance,
-          duration: firstRoute.duration,
-        });
+        setMapboxRoutes(nextRoutes);
+        setRankedRoutes([]);
+        setSelectedRouteIndex(0);
+        setRoute(mapboxRouteToRoute(firstRoute));
       } catch (routeError) {
         if (
           routeError instanceof DOMException &&
@@ -107,6 +113,9 @@ export function useDirections(
         }
 
         setRoute(null);
+        setRankedRoutes([]);
+        setSelectedRouteIndex(null);
+        setMapboxRoutes([]);
         setError(
           routeError instanceof Error
             ? routeError.message
@@ -124,5 +133,95 @@ export function useDirections(
     };
   }, [destination, origin, profile]);
 
-  return { route, isLoading, error };
+  useEffect(() => {
+    if (!mapboxRoutes.length) {
+      return;
+    }
+
+    const controller = new AbortController();
+    let cancelled = false;
+
+    async function rankRoutes() {
+      setIsLoading(true);
+
+      try {
+        const ranked = await fetchBackendJson<MapboxRouteRankResponse>(
+          "/routes/rank-mapbox",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              response: { routes: mapboxRoutes },
+              light_weight: weights.light_weight,
+              crime_weight: weights.crime_weight,
+            }),
+            signal: controller.signal,
+          },
+        );
+
+        if (cancelled) {
+          return;
+        }
+
+        setRankedRoutes(ranked.ranked_routes);
+
+        const nextSelectedIndex =
+          ranked.best_route_index ??
+          ranked.ranked_routes[0]?.source_route_index ??
+          0;
+
+        setSelectedRouteIndex(nextSelectedIndex);
+
+        const selected = mapboxRoutes[nextSelectedIndex];
+        setRoute(selected ? mapboxRouteToRoute(selected) : null);
+      } catch (rankError) {
+        if (
+          rankError instanceof DOMException &&
+          rankError.name === "AbortError"
+        ) {
+          return;
+        }
+
+        if (!cancelled) {
+          setError(
+            rankError instanceof Error
+              ? rankError.message
+              : "Could not rank route alternatives.",
+          );
+          setRankedRoutes([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoading(false);
+        }
+      }
+    }
+
+    void rankRoutes();
+
+    return () => {
+      cancelled = true;
+      controller.abort();
+    };
+  }, [mapboxRoutes, weights.crime_weight, weights.light_weight]);
+
+  const selectRouteByIndex = useCallback(
+    (index: number) => {
+      setSelectedRouteIndex(index);
+      const selected = mapboxRoutes[index];
+      setRoute(selected ? mapboxRouteToRoute(selected) : null);
+    },
+    [mapboxRoutes],
+  );
+
+  return {
+    route,
+    rankedRoutes,
+    selectedRouteIndex,
+    isLoading,
+    error,
+    selectRouteByIndex,
+  };
 }

@@ -15,6 +15,8 @@ import type {
   GeocodingResult,
   NavigationState,
   Route,
+  RankedRoute,
+  RouteWeights,
   TravelProfile,
 } from "@/lib/types";
 import {
@@ -44,11 +46,18 @@ function getViewportSnapPoint(): DrawerSnapPoint {
 type MapBottomDrawerProps = {
   state: NavigationState;
   route: Route | null;
+  rankedRoutes: RankedRoute[];
+  selectedRouteIndex: number | null;
   destinationName: string;
   destinationLabel: string;
   profile: TravelProfile;
   isLoadingRoute: boolean;
   error: string | null;
+  weights: RouteWeights;
+  isWeightsLoading: boolean;
+  isWeightsSaving: boolean;
+  weightsError: string | null;
+  hasPendingWeightChanges: boolean;
   distanceRemaining: number;
   durationRemaining: number;
   activeStepIndex: number;
@@ -56,6 +65,10 @@ type MapBottomDrawerProps = {
   onDestinationSelect: (result: GeocodingResult) => void;
   onDestinationCoordinatesChange: (coordinates: Coordinates | null) => void;
   onProfileChange: (profile: TravelProfile) => void;
+  onSelectRoute: (index: number) => void;
+  onLightWeightChange: (value: number) => void;
+  onCrimeWeightChange: (value: number) => void;
+  onSaveWeights: () => Promise<void>;
   onStartJourney: () => void;
   onStopNavigation: () => void;
 };
@@ -71,11 +84,18 @@ function ManeuverIcon({ type }: { type: string }) {
 export function MapBottomDrawer({
   state,
   route,
+  rankedRoutes,
+  selectedRouteIndex,
   destinationName,
   destinationLabel,
   profile,
   isLoadingRoute,
   error,
+  weights,
+  isWeightsLoading,
+  isWeightsSaving,
+  weightsError,
+  hasPendingWeightChanges,
   distanceRemaining,
   durationRemaining,
   activeStepIndex,
@@ -83,6 +103,10 @@ export function MapBottomDrawer({
   onDestinationSelect,
   onDestinationCoordinatesChange,
   onProfileChange,
+  onSelectRoute,
+  onLightWeightChange,
+  onCrimeWeightChange,
+  onSaveWeights,
   onStartJourney,
   onStopNavigation,
 }: MapBottomDrawerProps) {
@@ -124,12 +148,6 @@ export function MapBottomDrawer({
   const resolvedActiveSnapPoint = activeSnapPointIsAvailable
     ? activeSnapPoint
     : openSnapPoint;
-  const [pinWeights, setPinWeights] = useState({
-    lowLight: 50,
-    dangerousArea: 50,
-  });
-  const [hasPendingChanges, setHasPendingChanges] = useState(false);
-
   function handleSearchFocus() {
     const nextOpenSnapPoint = getViewportSnapPoint();
     setOpenSnapPoint(nextOpenSnapPoint);
@@ -143,15 +161,8 @@ export function MapBottomDrawer({
     setDrawerState({ mode: state, snapPoint: nextOpenSnapPoint });
   }
 
-  function updatePinWeight(key: "lowLight" | "dangerousArea", value: number) {
-    setPinWeights((current) => ({ ...current, [key]: value }));
-    setHasPendingChanges(true);
-    // TODO: connect to tanstack mutation for API persistence.
-  }
-
-  function handleSavePinWeights() {
-    // TODO: connect to tanstack mutation for API persistence.
-    setHasPendingChanges(false);
+  async function handleSavePinWeights() {
+    await onSaveWeights();
   }
 
   return (
@@ -210,8 +221,53 @@ export function MapBottomDrawer({
                     value="overview"
                     className="mt-4 max-h-[42vh] overflow-y-auto pr-1"
                   >
-                    <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
-                      Hello World
+                    <div className="space-y-3">
+                      {rankedRoutes.length > 0 ? (
+                        rankedRoutes.slice(0, 3).map((candidate, index) => {
+                          const sourceIndex = candidate.source_route_index ?? index;
+                          const isSelected = selectedRouteIndex === sourceIndex;
+
+                          return (
+                            <button
+                              type="button"
+                              key={`${sourceIndex}-${candidate.score}`}
+                              onClick={() => onSelectRoute(sourceIndex)}
+                              className={`w-full rounded-2xl border px-4 py-4 text-left transition-all duration-300 ease-out ${isSelected ? "border-primary bg-primary/10 shadow-lg" : "border-border/60 bg-background/50 hover:border-primary/40 hover:bg-muted/40"}`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div className="min-w-0">
+                                  <p className="text-sm font-semibold text-foreground">
+                                    Route {index + 1}
+                                  </p>
+                                  <p className="mt-1 text-xs text-muted-foreground">
+                                    {Math.round(candidate.score_percent)}% safety · {Math.round(candidate.coverage * 100)}% light coverage
+                                  </p>
+                                </div>
+                                <div className="rounded-full bg-foreground/5 px-2.5 py-1 text-xs font-semibold text-foreground">
+                                  {candidate.score.toFixed(1)} score
+                                </div>
+                              </div>
+
+                              <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                                <span>Dark run: {Math.round(candidate.longest_dark_run_ratio * 100)}%</span>
+                                <span>Light density: {candidate.light_density_per_km.toFixed(1)}/km</span>
+                                <span>Crime density: {candidate.crime_density_per_km.toFixed(1)}/km</span>
+                                <span>{isSelected ? "Selected route" : "Tap to use"}</span>
+                              </div>
+
+                              {candidate.notes.length > 0 ? (
+                                <p className="mt-3 text-xs text-muted-foreground">
+                                  {candidate.notes[0]}
+                                </p>
+                              ) : null}
+                            </button>
+                          );
+                        })
+                      ) : (
+                        <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-6 text-sm text-muted-foreground">
+                          Choose a destination to compare up to three safe route options.
+                        </div>
+                      )}
                     </div>
                   </TabsContent>
                   <TabsContent
@@ -219,28 +275,40 @@ export function MapBottomDrawer({
                     className="mt-4 max-h-[42vh] overflow-y-auto pr-1"
                   >
                     <div className="px-4 py-6 text-sm text-muted-foreground">
+                      {isWeightsLoading ? (
+                        <div className="mb-4 rounded-xl border border-border/60 bg-background/40 px-3 py-3 text-xs text-muted-foreground">
+                          Loading saved weights...
+                        </div>
+                      ) : null}
+
+                      {weightsError ? (
+                        <div className="mb-4 rounded-xl border border-destructive/40 bg-destructive/10 px-3 py-3 text-xs text-destructive">
+                          {weightsError}
+                        </div>
+                      ) : null}
+
                       <div className="space-y-4">
                         <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
                           <div className="flex items-center justify-between">
                             <div>
                               <p className="text-sm font-medium">
-                                Low light weight
+                                Light weight
                               </p>
                               <p className="text-xs text-muted-foreground">
                                 Influence for low-light segments
                               </p>
                             </div>
                             <span className="text-xs font-semibold text-foreground">
-                              {pinWeights.lowLight}
+                              {Math.round(weights.light_weight * 100)}
                             </span>
                           </div>
                           <div className="mt-3">
                             <Slider
-                              value={[pinWeights.lowLight]}
+                              value={[weights.light_weight * 100]}
                               min={0}
                               max={100}
                               onValueChange={([value]) =>
-                                updatePinWeight("lowLight", value)
+                                onLightWeightChange(value / 100)
                               }
                             />
                           </div>
@@ -248,24 +316,22 @@ export function MapBottomDrawer({
                         <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
                           <div className="flex items-center justify-between">
                             <div>
-                              <p className="text-sm font-medium">
-                                Dangerous area weight
-                              </p>
+                              <p className="text-sm font-medium">Crime weight</p>
                               <p className="text-xs text-muted-foreground">
-                                Influence for dangerous areas
+                                Influence for crime-related segments
                               </p>
                             </div>
                             <span className="text-xs font-semibold text-foreground">
-                              {pinWeights.dangerousArea}
+                              {Math.round(weights.crime_weight * 100)}
                             </span>
                           </div>
                           <div className="mt-3">
                             <Slider
-                              value={[pinWeights.dangerousArea]}
+                              value={[weights.crime_weight * 100]}
                               min={0}
                               max={100}
                               onValueChange={([value]) =>
-                                updatePinWeight("dangerousArea", value)
+                                onCrimeWeightChange(value / 100)
                               }
                             />
                           </div>
@@ -275,9 +341,9 @@ export function MapBottomDrawer({
                             type="button"
                             onClick={handleSavePinWeights}
                             className="rounded-lg bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground transition-all duration-300 ease-out hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
-                            disabled={!hasPendingChanges}
+                            disabled={!hasPendingWeightChanges || isWeightsSaving}
                           >
-                            Save weights
+                            {isWeightsSaving ? "Saving..." : "Save weights"}
                           </button>
                         </div>
                       </div>

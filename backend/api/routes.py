@@ -45,6 +45,7 @@ class MapboxDirectionsRequest(BaseModel):
 
 class RouteScoreResponse(BaseModel):
     name: Optional[str] = None
+    source_route_index: Optional[int] = None
     score: float
     score_percent: float
     coverage: float
@@ -153,7 +154,10 @@ async def rank_routes(request: RouteRankRequest) -> RouteRankResponse:
         reverse=True,
     )
 
-    ranked_routes = [RouteScoreResponse(**result.__dict__) for _, result in ranked_with_index]
+    ranked_routes = [
+        RouteScoreResponse(**{**result.__dict__, "source_route_index": route_index})
+        for route_index, result in ranked_with_index
+    ]
     best_route_index = ranked_with_index[0][0] if ranked_with_index else None
 
     return RouteRankResponse(
@@ -211,7 +215,10 @@ async def rank_mapbox_routes(request: MapboxDirectionsRequest) -> MapboxRouteRan
         reverse=True,
     )
 
-    ranked_routes = [RouteScoreResponse(**result.__dict__) for _, result in ranked_with_index]
+    ranked_routes = [
+        RouteScoreResponse(**{**result.__dict__, "source_route_index": route_index})
+        for route_index, result in ranked_with_index
+    ]
     best_route_index = ranked_with_index[0][0] if ranked_with_index else None
 
     return MapboxRouteRankResponse(

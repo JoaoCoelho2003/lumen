@@ -47,6 +47,17 @@ def _score_to_percent(score: float) -> float:
     return round(100.0 / (1.0 + math.exp(-score / 20.0)), 2)
 
 
+def _union_geometry(frame: gpd.GeoDataFrame):
+    if frame is None or frame.empty:
+        return None
+
+    union_all = getattr(frame.geometry, "union_all", None)
+    if callable(union_all):
+        return union_all()
+
+    return frame.geometry.unary_union
+
+
 @dataclass
 class RouteScoreResult:
     name: Optional[str]
@@ -87,7 +98,7 @@ class LightFirstRouteScorer:
 
         if self.lights_path.exists():
             self._lights = self._load_geodataframe(self.lights_path)
-            self._light_union = self._lights.geometry.union_all if self._lights is not None and not self._lights.empty else None
+            self._light_union = _union_geometry(self._lights)
             status["lights"] = self._lights is not None and not self._lights.empty
         else:
             self._lights = None
@@ -95,7 +106,7 @@ class LightFirstRouteScorer:
 
         if self.crimes_path.exists():
             self._crimes = self._load_geodataframe(self.crimes_path)
-            self._crime_union = self._crimes.geometry.union_all if self._crimes is not None and not self._crimes.empty else None
+            self._crime_union = _union_geometry(self._crimes)
             status["crimes"] = self._crimes is not None and not self._crimes.empty
         else:
             self._crimes = None
