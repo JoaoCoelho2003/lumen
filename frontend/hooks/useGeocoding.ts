@@ -2,7 +2,10 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MAPBOX_TOKEN } from "@/lib/constants";
-import type { GeocodingResult, MapboxGeocodingResponse } from "@/lib/types";
+import type {
+  Coordinates,
+  GeocodingResult,
+} from "@/lib/types";
 
 type GeocodingState = {
   suggestions: GeocodingResult[];
@@ -11,8 +14,81 @@ type GeocodingState = {
 };
 
 const CACHE_LIMIT = 20;
+const SEARCH_RESULT_LIMIT = 10;
+const SEARCH_TYPES = [
+  "poi",
+  "address",
+  "street",
+  "place",
+  "locality",
+  "neighborhood",
+  "district",
+  "postcode",
+  "region",
+].join(",");
 
-export function useGeocoding(query: string): GeocodingState {
+type SearchBoxFeature = {
+  geometry?: {
+    coordinates?: Coordinates;
+  };
+  properties?: {
+    mapbox_id?: string;
+    name?: string;
+    full_address?: string;
+    place_formatted?: string;
+    coordinates?: {
+      longitude?: number;
+      latitude?: number;
+    };
+  };
+};
+
+type SearchBoxResponse = {
+  features?: SearchBoxFeature[];
+  message?: string;
+};
+
+function formatSearchBoxPlaceName(feature: SearchBoxFeature) {
+  const name = feature.properties?.name ?? "";
+  const fullAddress = feature.properties?.full_address;
+  const placeFormatted = feature.properties?.place_formatted;
+
+  if (fullAddress) {
+    return fullAddress;
+  }
+
+  return [name, placeFormatted].filter(Boolean).join(", ");
+}
+
+function searchBoxFeatureToResult(feature: SearchBoxFeature) {
+  const longitude =
+    feature.properties?.coordinates?.longitude ??
+    feature.geometry?.coordinates?.[0];
+  const latitude =
+    feature.properties?.coordinates?.latitude ??
+    feature.geometry?.coordinates?.[1];
+  const name = feature.properties?.name;
+
+  if (
+    typeof longitude !== "number" ||
+    typeof latitude !== "number" ||
+    !name
+  ) {
+    return null;
+  }
+
+  return {
+    id: feature.properties?.mapbox_id ?? `${name}-${longitude}-${latitude}`,
+    place_name: formatSearchBoxPlaceName(feature),
+    center: [longitude, latitude] as Coordinates,
+    text: name,
+  } satisfies GeocodingResult;
+}
+
+export function useGeocoding(
+  query: string,
+  proximity?: Coordinates | null,
+): GeocodingState {
   const [suggestions, setSuggestions] = useState<GeocodingResult[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -41,7 +117,8 @@ export function useGeocoding(query: string): GeocodingState {
       return () => window.clearTimeout(reset);
     }
 
-    const cacheKey = trimmedQuery.toLowerCase();
+    const proximityKey = proximity?.join(",") ?? "ip";
+    const cacheKey = `${trimmedQuery.toLowerCase()}|${proximityKey}`;
     const cachedSuggestions = cacheRef.current.get(cacheKey);
 
     if (cachedSuggestions) {
@@ -64,28 +141,27 @@ export function useGeocoding(query: string): GeocodingState {
           access_token: MAPBOX_TOKEN,
           country: "pt",
           language: "pt",
-          limit: "5",
+          limit: String(SEARCH_RESULT_LIMIT),
+          proximity: proximityKey,
+          types: SEARCH_TYPES,
+          auto_complete: "true",
+          q: trimmedQuery,
         });
         const response = await fetch(
-          `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-            trimmedQuery,
-          )}.json?${params.toString()}`,
+          `https://api.mapbox.com/search/searchbox/v1/forward?${params.toString()}`,
           { signal: controller.signal },
         );
-        const data = (await response.json()) as MapboxGeocodingResponse;
+        const data = (await response.json()) as SearchBoxResponse;
 
         if (!response.ok) {
           throw new Error(data.message ?? "Search failed. Try again.");
         }
 
         const nextSuggestions =
-          data.features?.map((feature) => ({
-            id: feature.id,
-            place_name: feature.place_name,
-            center: feature.center,
-            text: feature.text,
-            context: feature.context,
-          })) ?? [];
+          data.features
+            ?.map(searchBoxFeatureToResult)
+            .filter((result): result is GeocodingResult => result !== null) ??
+          [];
 
         const cache = cacheRef.current;
         cache.set(cacheKey, nextSuggestions);
@@ -120,7 +196,7 @@ export function useGeocoding(query: string): GeocodingState {
       window.clearTimeout(debounce);
       controller.abort();
     };
-  }, [query]);
+  }, [proximity, query]);
 
   return { suggestions, isLoading, error };
 }

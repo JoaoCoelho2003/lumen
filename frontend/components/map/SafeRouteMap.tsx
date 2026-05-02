@@ -690,6 +690,7 @@ export function SafeRouteMap() {
         selectedRouteIndex={selectedRouteIndex}
         destinationName={destinationLabel}
         destinationLabel={destinationLabel}
+        searchProximity={origin}
         profile={profile}
         isLoadingRoute={isLoading}
         error={routeError}

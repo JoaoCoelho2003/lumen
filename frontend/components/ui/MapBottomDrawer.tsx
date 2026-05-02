@@ -51,6 +51,7 @@ type MapBottomDrawerProps = {
   selectedRouteIndex: number | null;
   destinationName: string;
   destinationLabel: string;
+  searchProximity: Coordinates | null;
   profile: TravelProfile;
   isLoadingRoute: boolean;
   error: string | null;
@@ -93,6 +94,7 @@ export function MapBottomDrawer({
   selectedRouteIndex,
   destinationName,
   destinationLabel,
+  searchProximity,
   profile,
   isLoadingRoute,
   error,
@@ -213,6 +215,7 @@ export function MapBottomDrawer({
               <SearchBar
                 destinationLabel={destinationLabel}
                 error={state === "idle" ? error : null}
+                proximity={searchProximity}
                 suggestionsPlacement="below"
                 onFocus={handleSearchFocus}
                 onDestinationLabelChange={onDestinationLabelChange}
