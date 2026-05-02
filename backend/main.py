@@ -5,15 +5,19 @@ import re
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, Query
+from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response
 
 load_dotenv()
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+DATA_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+
 LAMPS_FILE = "coimbra_luminarias_completo.geojson"
 LAMPS_PATH = os.path.join(BASE_DIR, LAMPS_FILE)
+
+CRIME_PATH = os.path.join(DATA_DIR, "coimbra_crime_streets.geojson")
 
 _coords: array.array | None = None
 
@@ -91,3 +95,11 @@ def serve_tile(
     )
 
     return Response(content=body, media_type="application/geo+json")
+
+
+@app.get("/api/crime-streets")
+def serve_crime_streets():
+    if not os.path.exists(CRIME_PATH):
+        raise HTTPException(status_code=404, detail="Crime streets file not found")
+    with open(CRIME_PATH, "rb") as f:
+        return Response(content=f.read(), media_type="application/geo+json")
