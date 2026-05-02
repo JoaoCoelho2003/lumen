@@ -11,11 +11,7 @@ from fastapi.responses import Response
 
 load_dotenv()
 
-BASE_DIR = os.path.join(
-    os.path.dirname(
-        os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-    ),
-)
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 LAMPS_FILE = "coimbra_luminarias_completo.geojson"
 LAMPS_PATH = os.path.join(BASE_DIR, LAMPS_FILE)
 
