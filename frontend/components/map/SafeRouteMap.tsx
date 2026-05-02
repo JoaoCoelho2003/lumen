@@ -29,6 +29,8 @@ import type {
   NavigationState,
   TravelProfile,
 } from "@/lib/types";
+import { CrimeLayer } from "@/components/map/CrimeLayer";
+import { HeatmapLayer } from "@/components/map/HeatmapLayer";
 import { MarkerLayer } from "@/components/map/MarkerLayer";
 import { RouteLayer } from "@/components/map/RouteLayer";
 import { LayerToggles } from "@/components/ui/LayerToggles";
@@ -498,6 +500,8 @@ export function SafeRouteMap() {
           setMapZoom(event.viewState.zoom);
         }}
       >
+        <CrimeLayer enabled={heatmapEnabled} hour={portugalHour} />
+        <HeatmapLayer enabled={lightingEnabled} />
         <RouteLayer
           route={activeRoute}
           distanceTravelled={navigation.distanceTravelled}

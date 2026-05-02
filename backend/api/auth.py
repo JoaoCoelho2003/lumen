@@ -3,9 +3,9 @@ from pydantic import BaseModel
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from backend.core.database import get_db
-from backend.db.models import User
-from backend.utils.security import hash_password, verify_password
+from core.database import get_db
+from db.models import User
+from utils.security import hash_password, verify_password
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
