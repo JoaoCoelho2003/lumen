@@ -1,5 +1,3 @@
-import Link from "next/link";
-
 type AuthPageShellProps = {
   eyebrow: string;
   title: string;
@@ -16,30 +14,27 @@ export default function AuthPageShell({
   footer,
 }: AuthPageShellProps) {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 px-6 py-16 text-white">
-      <section className="w-full max-w-lg rounded-3xl border border-white/10 bg-white/5 p-8 shadow-2xl backdrop-blur-md sm:p-10">
-        <div className="mb-8 flex items-center justify-between gap-4">
-          <div>
-            <p className="text-sm uppercase tracking-[0.35em] text-emerald-300/80">
-              {eyebrow}
-            </p>
-            <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+    <main className="flex min-h-dvh items-center justify-center bg-muted px-4 py-8 text-foreground sm:px-6">
+      <section className="w-full max-w-md rounded-2xl border border-border/60 bg-card/95 p-6 text-card-foreground shadow-2xl backdrop-blur-md sm:p-8">
+        <div className="mb-7 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-lg shadow-primary/20">
+              <span className="text-base font-semibold">L</span>
+            </div>
+            <p className="text-sm font-medium text-primary">{eyebrow}</p>
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-2xl font-semibold tracking-tight text-foreground sm:text-3xl">
               {title}
             </h1>
+            <p className="text-sm leading-6 text-muted-foreground">
+              {description}
+            </p>
           </div>
-          <Link
-            href="/"
-            className="rounded-full border border-white/15 px-4 py-2 text-sm font-medium text-white transition hover:bg-white/10"
-          >
-            Home
-          </Link>
         </div>
 
-        <p className="max-w-md text-sm leading-7 text-slate-300 sm:text-base">
-          {description}
-        </p>
-
-        <div className="mt-8">{children}</div>
+        <div>{children}</div>
 
         {footer ? <div className="mt-6">{footer}</div> : null}
       </section>

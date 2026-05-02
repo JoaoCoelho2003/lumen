@@ -1,7 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
-import { Flame, Lightbulb } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { LightbulbOff, TriangleAlert } from "lucide-react";
+import type { ExpressionSpecification } from "mapbox-gl";
 import { Layer, Marker, Source } from "react-map-gl";
 import { DANGER_CLUSTER_RADIUS_KM } from "@/lib/constants";
 import type { Pin, PinType } from "@/lib/types";
@@ -9,7 +10,7 @@ import type { Pin, PinType } from "@/lib/types";
 const STEPS = 64;
 const RADIUS_GROWTH = 0.18;
 const MAX_RADIUS_FACTOR = 2.2;
-const MIXED_INNER_OFFSET_KM = 0.032;
+const MIXED_INNER_OFFSET_KM = 0.009;
 
 function circleCoords(
   lng: number,
@@ -143,17 +144,37 @@ function buildClusters(pins: Pin[]): AnyCluster[] {
 }
 
 function dangerColor(count: number): string {
-  if (count === 1) return "#EAB308";
-  if (count === 2) return "#F97316";
-  if (count === 3) return "#EF4444";
-  return "#B91C1C";
+  if (count === 1) return "#EF4444";
+  if (count === 2) return "#DC2626";
+  if (count === 3) return "#B91C1C";
+  return "#991B1B";
 }
 
 function lightColor(count: number): string {
-  if (count === 1) return "#FCD34D";
-  if (count === 2) return "#F59E0B";
-  if (count === 3) return "#D97706";
-  return "#B45309";
+  if (count === 1) return "#F59E0B";
+  if (count === 2) return "#D97706";
+  if (count === 3) return "#B45309";
+  return "#92400E";
+}
+
+function markerTone(pinType: PinType): {
+  color: string;
+  backgroundColor: string;
+  borderColor: string;
+} {
+  if (pinType === "low-light") {
+    return {
+      color: "#F59E0B",
+      backgroundColor: "rgba(245, 158, 11, 0.15)",
+      borderColor: "rgba(245, 158, 11, 0.3)",
+    };
+  }
+
+  return {
+    color: "#EF4444",
+    backgroundColor: "rgba(239, 68, 68, 0.15)",
+    borderColor: "rgba(239, 68, 68, 0.3)",
+  };
 }
 
 function clusterRadius(count: number): number {
@@ -238,9 +259,10 @@ function clusterFeatures(c: AnyCluster): {
   };
 }
 
-type PinLayerProps = { pins: Pin[] };
+type PinLayerProps = { pins: Pin[]; visible: boolean };
 
-export function PinLayer({ pins }: PinLayerProps) {
+export function PinLayer({ pins, visible }: PinLayerProps) {
+  const [mounted, setMounted] = useState(false);
   const clusters = useMemo(() => buildClusters(pins), [pins]);
 
   const { outerGeo, innerGeo } = useMemo(() => {
@@ -263,7 +285,20 @@ export function PinLayer({ pins }: PinLayerProps) {
     };
   }, [clusters]);
 
+  useEffect(() => {
+    const transitionDelay = window.setTimeout(() => {
+      setMounted(true);
+    }, 0);
+
+    return () => window.clearTimeout(transitionDelay);
+  }, []);
+
   if (pins.length === 0) return null;
+
+  const markerVisible = mounted && visible;
+  const fillOpacity: ExpressionSpecification | number = markerVisible
+    ? ["get", "opacity"]
+    : 0;
 
   return (
     <>
@@ -273,7 +308,8 @@ export function PinLayer({ pins }: PinLayerProps) {
           type="fill"
           paint={{
             "fill-color": ["get", "color"],
-            "fill-opacity": ["get", "opacity"],
+            "fill-opacity": fillOpacity,
+            "fill-opacity-transition": { duration: 300, delay: 300 },
           }}
         />
       </Source>
@@ -283,7 +319,8 @@ export function PinLayer({ pins }: PinLayerProps) {
           type="fill"
           paint={{
             "fill-color": ["get", "color"],
-            "fill-opacity": ["get", "opacity"],
+            "fill-opacity": fillOpacity,
+            "fill-opacity-transition": { duration: 300, delay: 300 },
           }}
         />
       </Source>
@@ -298,57 +335,74 @@ export function PinLayer({ pins }: PinLayerProps) {
             latitude={c.lat}
             anchor="center"
           >
-            {isMixed ? (
-              <div className="flex overflow-hidden rounded-full shadow-lg ring-1 ring-black/25">
+            <div
+              className={`transition-all delay-300 duration-300 ease-out ${
+                markerVisible
+                  ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
+                  : "pointer-events-none translate-y-1 scale-75 opacity-0"
+              }`}
+            >
+              {isMixed ? (
+                <div className="flex overflow-hidden rounded-full bg-card/95 shadow-lg ring-1 ring-black/25 backdrop-blur-sm">
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      backgroundColor: markerTone("dangerous-area").backgroundColor,
+                      borderColor: markerTone("dangerous-area").borderColor,
+                      color: markerTone("dangerous-area").color,
+                      borderWidth: 1,
+                      width: 30,
+                      height: 30,
+                    }}
+                  >
+                    <TriangleAlert
+                      className="h-3.5 w-3.5"
+                      strokeWidth={2.2}
+                    />
+                  </div>
+                  <div
+                    className="flex items-center justify-center"
+                    style={{
+                      backgroundColor: markerTone("low-light").backgroundColor,
+                      borderColor: markerTone("low-light").borderColor,
+                      color: markerTone("low-light").color,
+                      borderWidth: 1,
+                      width: 30,
+                      height: 30,
+                    }}
+                  >
+                    <LightbulbOff
+                      className="h-3.5 w-3.5"
+                      strokeWidth={2.2}
+                    />
+                  </div>
+                </div>
+              ) : (
                 <div
-                  className="flex items-center justify-center"
+                  className="flex items-center justify-center rounded-full bg-card/95 shadow-lg ring-1 ring-black/25 backdrop-blur-sm"
                   style={{
-                    backgroundColor: dangerColor(c.dangerCount),
                     width: 30,
                     height: 30,
+                    backgroundColor: markerTone(c.pin_type).backgroundColor,
+                    borderColor: markerTone(c.pin_type).borderColor,
+                    color: markerTone(c.pin_type).color,
+                    borderWidth: 1,
                   }}
                 >
-                  <Flame
-                    className="h-3.5 w-3.5  text-white"
-                    strokeWidth={2.2}
-                  />
+                  {c.pin_type === "low-light" ? (
+                    <LightbulbOff
+                      className="h-3.5 w-3.5"
+                      strokeWidth={2.2}
+                    />
+                  ) : (
+                    <TriangleAlert
+                      className="h-3.5 w-3.5"
+                      strokeWidth={2.2}
+                    />
+                  )}
                 </div>
-                <div
-                  className="flex items-center justify-center"
-                  style={{
-                    backgroundColor: lightColor(c.lightCount),
-                    width: 30,
-                    height: 30,
-                  }}
-                >
-                  <Lightbulb
-                    className="h-3.5 w-3.5 text-white"
-                    strokeWidth={2.2}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div
-                className="flex items-center justify-center rounded-full shadow-lg ring-1 ring-black/25"
-                style={{
-                  width: 30,
-                  height: 30,
-                  backgroundColor:
-                    c.pin_type === "low-light"
-                      ? lightColor(c.count)
-                      : dangerColor(c.count),
-                }}
-              >
-                {c.pin_type === "low-light" ? (
-                  <Lightbulb
-                    className="h-3.5 w-3.5 text-white"
-                    strokeWidth={2.2}
-                  />
-                ) : (
-                  <Flame className="h-3.5 w-3.5 text-white" strokeWidth={2.2} />
-                )}
-              </div>
-            )}
+              )}
+            </div>
           </Marker>
         );
       })}
