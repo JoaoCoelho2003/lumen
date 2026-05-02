@@ -24,9 +24,10 @@ const CLOSED_SNAP = "104px";
 const MID_SNAP = 0.35;
 const OPEN_SNAP = 1;
 const SEARCH_SNAP_POINTS = [MID_SNAP, OPEN_SNAP];
-const NAVIGATION_SNAP_POINTS = [CLOSED_SNAP, MID_SNAP, OPEN_SNAP];
+const NAVIGATION_SNAP_POINTS = [MID_SNAP, OPEN_SNAP];
+const IDLE_SNAP_POINTS = [CLOSED_SNAP, MID_SNAP, OPEN_SNAP];
 
-type DrawerSnapPoint = (typeof NAVIGATION_SNAP_POINTS)[number];
+type DrawerSnapPoint = (typeof IDLE_SNAP_POINTS)[number];
 
 type MapBottomDrawerProps = {
   state: NavigationState;
@@ -82,14 +83,14 @@ export function MapBottomDrawer({
     snapPoint: state === "preview" ? OPEN_SNAP : showSearch ? MID_SNAP : CLOSED_SNAP,
   });
 
-  const activeSnapPoint =
-    drawerState.mode === state
-      ? drawerState.snapPoint
-      : state === "preview"
-        ? OPEN_SNAP
-        : showSearch
-          ? MID_SNAP
-          : CLOSED_SNAP;
+  if (drawerState.mode !== state) {
+    setDrawerState({
+      mode: state,
+      snapPoint: state === "preview" ? OPEN_SNAP : MID_SNAP,
+    });
+  }
+
+  const activeSnapPoint = drawerState.snapPoint;
 
   const remainingSteps = route?.steps.slice(activeStepIndex) ?? [];
   const snapPoints = showSearch ? SEARCH_SNAP_POINTS : NAVIGATION_SNAP_POINTS;
@@ -108,10 +109,10 @@ export function MapBottomDrawer({
       open
       modal={false}
       dismissible={false}
-      snapPoints={snapPoints}
+      snapPoints={snapPoints.filter((s) => typeof s === "number") as number[]}
       activeSnapPoint={activeSnapPoint}
       setActiveSnapPoint={(snapPoint) => {
-        if (snapPoint !== null && snapPoints.includes(snapPoint as DrawerSnapPoint)) {
+        if (snapPoint !== null) {
           setDrawerState({ mode: state, snapPoint: snapPoint as DrawerSnapPoint });
         }
       }}
