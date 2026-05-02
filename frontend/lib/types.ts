@@ -12,6 +12,17 @@ export type GeocodingResult = {
   }>;
 };
 
+export type SafeSpotKind = "police" | "fire" | "hospital";
+
+export type SafeSpot = {
+  id: string;
+  name: string;
+  address: string;
+  coordinates: Coordinates;
+  kind: SafeSpotKind;
+  distance: number;
+};
+
 export type RouteStep = {
   instruction: string;
   maneuver: {
@@ -29,6 +40,8 @@ export type LineStringGeometry = {
 };
 
 export type Route = {
+  origin: Coordinates;
+  destination: Coordinates;
   geometry: LineStringGeometry;
   steps: RouteStep[];
   distance: number;
@@ -56,6 +69,10 @@ export type MapboxGeocodingFeature = {
   place_name: string;
   center: Coordinates;
   text: string;
+  properties?: {
+    address?: string;
+    category?: string;
+  };
   context?: Array<{
     text: string;
   }>;

@@ -52,6 +52,7 @@ export function useDirections(
 
     async function fetchRoute() {
       setIsLoading(true);
+      setRoute(null);
       setError(null);
 
       try {
@@ -93,6 +94,8 @@ export function useDirections(
         );
 
         setRoute({
+          origin: currentOrigin,
+          destination: currentDestination,
           geometry: firstRoute.geometry,
           steps,
           distance: firstRoute.distance,
