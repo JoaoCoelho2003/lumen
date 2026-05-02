@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime
+from sqlalchemy import Column, Float, Integer, String, DateTime
 from sqlalchemy.sql import func
 from core.database import Base
 
@@ -11,3 +11,14 @@ class User(Base):
     hashed_password = Column(String, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class Pin(Base):
+    __tablename__ = "pins"
+
+    id = Column(Integer, primary_key=True, index=True)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    pin_type = Column(String, nullable=False)
+    user_id = Column(String, nullable=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
