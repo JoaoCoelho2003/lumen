@@ -10,7 +10,10 @@ export function useGetPins() {
   const { data: pins = [] } = useQuery({
     queryKey: ["pins"],
     queryFn: getPins,
+    staleTime: 10_000,
+    gcTime: 5 * 60 * 1000,
     refetchInterval: 15_000,
+    refetchIntervalInBackground: false,
     refetchOnWindowFocus: true,
   });
   return pins;

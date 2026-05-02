@@ -2,9 +2,7 @@
 
 import { Layer, Source } from "react-map-gl";
 import type { ExpressionSpecification } from "mapbox-gl";
-import { useViewportGeoJson } from "@/hooks/useViewportGeoJson";
-
-const API_BASE = "/lumen-api";
+import { useLightingTile } from "@/app/api/queries/map-data";
 
 const HEATMAP_COLOR: ExpressionSpecification = [
   "interpolate",
@@ -18,7 +16,7 @@ const HEATMAP_COLOR: ExpressionSpecification = [
 ];
 
 export function HeatmapLayer({ enabled }: { enabled: boolean }) {
-  const data = useViewportGeoJson(enabled, `${API_BASE}/api/tile`);
+  const data = useLightingTile(enabled);
 
   if (!enabled) return null;
 

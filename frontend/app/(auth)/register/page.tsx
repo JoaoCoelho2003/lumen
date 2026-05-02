@@ -2,16 +2,18 @@
 
 import Link from "next/link";
 import { SyntheticEvent, useState } from "react";
+import { useRouter } from "next/navigation";
 import AuthPageShell from "../../../components/auth-page-shell";
 import { Button } from "@/components/ui/button";
+import { useRegisterMutation } from "@/app/api/mutations/auth";
 
 export default function RegisterPage() {
-  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const router = useRouter();
+  const registerMutation = useRegisterMutation();
 
   const handleSubmit = async (e: SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
 
     const formData = new FormData(e.currentTarget);
@@ -21,42 +23,16 @@ export default function RegisterPage() {
 
     if (password !== confirmPassword) {
       setError("Passwords do not match");
-      setLoading(false);
       return;
     }
 
     try {
-      const res = await fetch("/api/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password, confirmPassword }),
-      });
-
-      if (res.ok) {
-        window.location.href = "/login";
-        return;
-      }
-
-      let errorMessage = "Unknown error";
-      try {
-        const contentType = res.headers.get("Content-Type") ?? "";
-        if (contentType.includes("application/json")) {
-          const errorData = await res.json();
-          errorMessage = errorData.detail ?? errorData.message ?? errorMessage;
-        } else {
-          errorMessage = (await res.text()) || errorMessage;
-        }
-      } catch {
-        errorMessage = `Request failed with status ${res.status}`;
-      }
-
-      setError(`Registration failed: ${errorMessage}`);
+      await registerMutation.mutateAsync({ username, password, confirmPassword });
+      router.replace("/login");
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "An unexpected error occurred",
       );
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -131,11 +107,11 @@ export default function RegisterPage() {
 
         <Button
           type="submit"
-          disabled={loading}
+          disabled={registerMutation.isPending}
           size="lg"
           className="mt-2 w-full"
         >
-          {loading ? "Registering..." : "Register"}
+          {registerMutation.isPending ? "Registering..." : "Register"}
         </Button>
       </form>
     </AuthPageShell>

@@ -38,7 +38,7 @@ export function useCreatePinMutation() {
       return { previousPins };
     },
 
-    onSuccess: (saved, _, context) => {
+    onSuccess: (saved) => {
       // Replace optimistic pin with the real one from the server,
       // guarding against duplicates (backend deduplicates by cluster).
       queryClient.setQueryData<Pin[]>(["pins"], (prev = []) => {
@@ -46,6 +46,10 @@ export function useCreatePinMutation() {
         const alreadyPresent = withoutOptimistic.some((p) => p.id === saved.id);
         return alreadyPresent ? withoutOptimistic : [...withoutOptimistic, saved];
       });
+    },
+
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ["pins"] });
     },
 
     onError: (_, __, context) => {

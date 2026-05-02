@@ -3,7 +3,7 @@ import type { Coordinates, Pin, PinType } from "@/lib/types";
 
 export async function getPins() {
   try {
-    const res = await api.get<Pin[]>("/pins");
+    const res = await api.get<Pin[]>("/pins/");
     return res.data.map((p) => ({ ...p, id: String(p.id) }));
   } catch {
     throw new Error(`Failed to fetch pins. Please try again later.`);
@@ -17,7 +17,7 @@ export async function createPin(
 ): Promise<Pin> {
   try {
     const [longitude, latitude] = coordinates;
-    const res = await api.post<Pin>("/pins", {
+    const res = await api.post<Pin>("/pins/", {
       latitude,
       longitude,
       pin_type,

@@ -97,6 +97,7 @@ export function SafeRouteMap() {
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [pinFeedback, setPinFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [pinDrawerOpen, setPinDrawerOpen] = useState(false);
 
   const { data: session, status: sessionStatus } = useSession();
   const userId = session?.user?.name ?? undefined;
@@ -502,6 +503,7 @@ export function SafeRouteMap() {
       origin ?? (mapRef.current ? [mapRef.current.getCenter().lng, mapRef.current.getCenter().lat] : null) ?? [0, 0];
 
     const ok = await addPin(coords, tag.value as PinType, userId);
+    setPinDrawerOpen(false);
     setPinFeedback(ok ? { ok: true, msg: "Pin submitted!" } : { ok: false, msg: "Failed to save pin." });
     window.setTimeout(() => setPinFeedback(null), 3000);
   }
@@ -568,14 +570,6 @@ export function SafeRouteMap() {
         </div>
       )}
 
-      {pinFeedback && (
-        <div
-          className={`pointer-events-none p-3 fixed inset-x-4 top-16 z-40 rounded-xl border text-xs shadow-2xl backdrop-blur-md ${pinFeedback.ok ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400" : "border-destructive/40 bg-destructive/15 text-destructive"}`}
-        >
-          {pinFeedback.msg}
-        </div>
-      )}
-
       <div className="fixed right-3 top-3 z-10">
         <UserMenu />
       </div>
@@ -607,6 +601,7 @@ export function SafeRouteMap() {
           route={activeRoute}
           distanceTravelled={navigation.distanceTravelled}
         />
+        <PinLayer pins={pins} visible={showPinMarkers} />
         <MarkerLayer
           origin={origin}
           destination={destination}
@@ -615,7 +610,6 @@ export function SafeRouteMap() {
           selectedSafeSpotId={selectedSafeSpotId}
           showSafeSpots={showSafeSpotMarkers}
         />
-        <PinLayer pins={pins} visible={showPinMarkers} />
       </Map>
 
       {/* side options */}
@@ -649,6 +643,21 @@ export function SafeRouteMap() {
         title="Pin Allert"
         description="Alert about pins on the route. Tap to view details."
         triggerLabel="Open quick settings"
+        open={pinDrawerOpen}
+        onOpenChange={setPinDrawerOpen}
+        inlineStatus={
+          pinFeedback ? (
+            <div
+              className={`pointer-events-none w-[calc(100vw-5.5rem)] max-w-sm rounded-xl border px-3 py-2 text-xs shadow-2xl backdrop-blur-md transition-all duration-300 ease-out ${
+                pinFeedback.ok
+                  ? "border-success/40 bg-success/15 text-success"
+                  : "border-destructive/40 bg-destructive/15 text-destructive"
+              }`}
+            >
+              {pinFeedback.msg}
+            </div>
+          ) : null
+        }
       >
         <PinTags tags={pinTags} onConfirm={handlePinConfirm} />
       </RightSideDrawer>

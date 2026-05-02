@@ -12,7 +12,10 @@ const withPWA = withPWAInit({
   },
 });
 
-const LUMEN_API = process.env.NEXT_PUBLIC_LUMEN_API_URL ?? "http://localhost:8000";
+const LUMEN_API =
+    process.env.LUMEN_BACKEND_URL ??
+    process.env.NEXT_PUBLIC_LUMEN_API_URL ??
+    "http://localhost:8000";
 
 const nextConfig: NextConfig = {
     turbopack: {},
