@@ -23,9 +23,10 @@ import { SearchBar } from "@/components/ui/SearchBar";
 const CLOSED_SNAP = "104px";
 const MID_SNAP = 0.35;
 const OPEN_SNAP = 0.9;
-const SNAP_POINTS = [CLOSED_SNAP, MID_SNAP, OPEN_SNAP];
+const SEARCH_SNAP_POINTS = [MID_SNAP, OPEN_SNAP];
+const NAVIGATION_SNAP_POINTS = [CLOSED_SNAP, MID_SNAP, OPEN_SNAP];
 
-type DrawerSnapPoint = (typeof SNAP_POINTS)[number];
+type DrawerSnapPoint = (typeof NAVIGATION_SNAP_POINTS)[number];
 
 type MapBottomDrawerProps = {
   state: NavigationState;
@@ -72,30 +73,26 @@ export function MapBottomDrawer({
   onStartJourney,
   onStopNavigation,
 }: MapBottomDrawerProps) {
+  const showSearch = state !== "navigating";
   const [drawerState, setDrawerState] = useState<{
     mode: NavigationState;
     snapPoint: DrawerSnapPoint;
   }>({
     mode: state,
-    snapPoint: CLOSED_SNAP,
+    snapPoint: showSearch ? MID_SNAP : CLOSED_SNAP,
   });
-
-  if (drawerState.mode !== state) {
-    setDrawerState({
-      mode: state,
-      snapPoint: state === "preview" ? MID_SNAP : CLOSED_SNAP,
-    });
-  }
 
   const activeSnapPoint =
     drawerState.mode === state
       ? drawerState.snapPoint
       : state === "preview"
         ? MID_SNAP
-        : CLOSED_SNAP;
+        : showSearch
+          ? MID_SNAP
+          : CLOSED_SNAP;
 
   const remainingSteps = route?.steps.slice(activeStepIndex) ?? [];
-  const showSearch = state !== "navigating";
+  const snapPoints = showSearch ? SEARCH_SNAP_POINTS : NAVIGATION_SNAP_POINTS;
 
   function handleSearchFocus() {
     setDrawerState({ mode: state, snapPoint: OPEN_SNAP });
@@ -111,10 +108,10 @@ export function MapBottomDrawer({
       open
       modal={false}
       dismissible={false}
-      snapPoints={SNAP_POINTS}
+      snapPoints={snapPoints}
       activeSnapPoint={activeSnapPoint}
       setActiveSnapPoint={(snapPoint) => {
-        if (snapPoint !== null && SNAP_POINTS.includes(snapPoint as DrawerSnapPoint)) {
+        if (snapPoint !== null && snapPoints.includes(snapPoint as DrawerSnapPoint)) {
           setDrawerState({ mode: state, snapPoint: snapPoint as DrawerSnapPoint });
         }
       }}
