@@ -1,11 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { Layer, Source, useMap } from "react-map-gl";
+import { Layer, Source } from "react-map-gl";
+import type { ExpressionSpecification } from "mapbox-gl";
+import { useLightingTile } from "@/app/api/queries/map-data";
 
-const API_BASE = "/lumen-api";
-
-const HEATMAP_COLOR = [
+const HEATMAP_COLOR: ExpressionSpecification = [
   "interpolate",
   ["linear"],
   ["heatmap-density"],
@@ -14,54 +13,10 @@ const HEATMAP_COLOR = [
   0.5, "#cc8800",
   0.8, "#ffcc00",
   1.0, "#ffffaa",
-] as const;
-
-type FeatureCollection = { type: "FeatureCollection"; features: unknown[] };
-
-const EMPTY: FeatureCollection = { type: "FeatureCollection", features: [] };
+];
 
 export function HeatmapLayer({ enabled }: { enabled: boolean }) {
-  const { current: map } = useMap();
-  const [data, setData] = useState<FeatureCollection>(EMPTY);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-
-  useEffect(() => {
-    if (!enabled || !map) {
-      setData(EMPTY);
-      return;
-    }
-
-    function fetchTile() {
-      if (!map) return;
-      const b = map.getBounds();
-      if (!b) return;
-      const zoom = map.getZoom();
-      const url =
-        `${API_BASE}/api/tile` +
-        `?lon_min=${b.getWest().toFixed(5)}&lat_min=${b.getSouth().toFixed(5)}` +
-        `&lon_max=${b.getEast().toFixed(5)}&lat_max=${b.getNorth().toFixed(5)}` +
-        `&zoom=${zoom.toFixed(1)}`;
-
-      fetch(url)
-        .then((r) => r.json())
-        .then(setData)
-        .catch(() => {});
-    }
-
-    function schedule() {
-      if (timer.current) clearTimeout(timer.current);
-      timer.current = setTimeout(fetchTile, 300);
-    }
-
-    fetchTile();
-    map.on("moveend", schedule);
-
-    return () => {
-      map.off("moveend", schedule);
-      if (timer.current) clearTimeout(timer.current);
-      setData(EMPTY);
-    };
-  }, [enabled, map]);
+  const data = useLightingTile(enabled);
 
   if (!enabled) return null;
 

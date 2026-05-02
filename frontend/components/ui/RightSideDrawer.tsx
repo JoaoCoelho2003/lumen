@@ -21,8 +21,11 @@ type RightSideDrawerProps = {
   triggerLabel: string;
   children: React.ReactNode;
   triggerIcon?: React.ReactNode;
+  inlineStatus?: React.ReactNode;
   className?: string;
   hasBlur?: boolean;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 };
 
 export function RightSideDrawer({
@@ -31,8 +34,11 @@ export function RightSideDrawer({
   triggerLabel,
   children,
   triggerIcon,
+  inlineStatus,
   className,
   hasBlur = false,
+  open,
+  onOpenChange,
 }: RightSideDrawerProps) {
   const [drawerOffset, setDrawerOffset] = React.useState(16);
 
@@ -68,10 +74,11 @@ export function RightSideDrawer({
 
   return (
     <div
-      className={cn("fixed right-3 z-10 flex flex-col gap-2", className)}
+      className={cn("fixed right-3 z-10 flex items-center gap-2", className)}
       style={{ bottom: drawerOffset }}
     >
-      <Drawer>
+      {inlineStatus}
+      <Drawer open={open} onOpenChange={onOpenChange}>
         <DrawerTrigger asChild>
           <Button
             size="icon-lg"

@@ -2,10 +2,18 @@
 
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import AuthPageShell from "../../components/auth-page-shell";
 
 export default function Dashboard() {
+  const router = useRouter();
   const { data: session, status } = useSession();
+
+  async function handleLogout() {
+    await signOut({ redirect: false });
+    router.replace("/login");
+    router.refresh();
+  }
 
   if (status === "loading") {
     return (
@@ -51,7 +59,7 @@ export default function Dashboard() {
       footer={
         <button
           type="button"
-          onClick={() => signOut({ callbackUrl: "/" })}
+          onClick={handleLogout}
           className="inline-flex items-center justify-center rounded-full border border-white/15 px-5 py-3 text-sm font-semibold text-white transition hover:bg-white/10"
         >
           Logout

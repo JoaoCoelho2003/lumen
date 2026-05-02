@@ -1,6 +1,7 @@
 "use client";
 
 import { Layer, Source } from "react-map-gl";
+import { useCrimeStreets } from "@/app/api/queries/map-data";
 
 // Piecewise linear curve:
 // 00h–03h → 1.0 (pico noturno)
@@ -32,12 +33,14 @@ export function crimeMultiplier(hour: number): number {
 }
 
 export function CrimeLayer({ enabled, hour }: { enabled: boolean; hour: number }) {
+  const data = useCrimeStreets(enabled);
+
   if (!enabled) return null;
 
   const m = crimeMultiplier(hour);
 
   return (
-    <Source id="crime-streets" type="geojson" data="/coimbra_crime_streets.geojson">
+    <Source id="crime-streets" type="geojson" data={data}>
       <Layer
         id="crime-streets-low"
         type="line"

@@ -1,5 +1,11 @@
+import axios from "axios";
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+
+const BACKEND =
+  process.env.LUMEN_BACKEND_URL ??
+  process.env.NEXT_PUBLIC_LUMEN_API_URL ??
+  "http://localhost:8000";
 
 const handler = NextAuth({
   providers: [
@@ -9,23 +15,18 @@ const handler = NextAuth({
         username: { label: "Username", type: "text", placeholder: "jsmith" },
         password: { label: "Password", type: "password" },
       },
-      async authorize(credentials, req) {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_LUMEN_API_URL}/auth/login`,
-          {
-            method: "POST",
-            body: JSON.stringify(credentials),
-            headers: { "Content-Type": "application/json" },
-          },
-        );
+      async authorize(credentials) {
+        try {
+          const response = await axios.post(
+            `${BACKEND.replace(/\/+$/, "")}/auth/login`,
+            credentials,
+            { headers: { "Content-Type": "application/json" } },
+          );
 
-        const user = await res.json();
-
-        if (res.ok && user) {
-          return user;
+          return response.data;
+        } catch {
+          return null;
         }
-
-        return null;
       },
     }),
   ],

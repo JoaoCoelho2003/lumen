@@ -12,7 +12,10 @@ const withPWA = withPWAInit({
   },
 });
 
-const LUMEN_API = process.env.NEXT_PUBLIC_LUMEN_API_URL ?? "http://localhost:8000";
+const LUMEN_API =
+    process.env.LUMEN_BACKEND_URL ??
+    process.env.NEXT_PUBLIC_LUMEN_API_URL ??
+    "http://localhost:8000";
 
 const nextConfig: NextConfig = {
     turbopack: {},
@@ -22,7 +25,8 @@ const nextConfig: NextConfig = {
         "10.209.233.116",
         "jayleen-hydrometrical-uncavalierly.ngrok-free.dev",
         "unsturdy-margarett-promising.ngrok-free.dev",
-        "uincz-161-230-56-29.run.pinggy-free.link"
+        "uincz-161-230-56-29.run.pinggy-free.link",
+        "3fea-148-69-201-206.ngrok-free.app"
     ],
     async rewrites() {
         return [
