@@ -53,6 +53,7 @@ export type NavigationState = "idle" | "preview" | "navigating";
 export type NavigationPosition = {
   coordinates: Coordinates;
   bearing: number;
+  cameraBearing: number;
   stepIndex: number;
   distanceTravelled: number;
 };

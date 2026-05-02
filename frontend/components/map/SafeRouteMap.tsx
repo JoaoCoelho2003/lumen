@@ -100,7 +100,7 @@ export function SafeRouteMap() {
     coordinatesMatch(route.destination, destination)
       ? route
       : null;
-  const navigation = useNavigation(activeRoute);
+  const navigation = useNavigation(activeRoute, profile);
   const metricsOptions = {
     performanceMetricsCollection: false,
   };
@@ -339,6 +339,8 @@ export function SafeRouteMap() {
     try {
       setLocationError(null);
       setShouldStartSafeRoute(false);
+      setProfile("walking");
+      void navigation.prepareCompassTracking();
       const currentOrigin = origin ?? (await requestCurrentLocation());
       const nearbySafeSpots = await findSafeSpots(currentOrigin);
       const closestSafeSpot = nearbySafeSpots[0];
@@ -352,7 +354,6 @@ export function SafeRouteMap() {
       setSelectedSafeSpotId(closestSafeSpot.id);
       setDestination(closestSafeSpot.coordinates);
       setDestinationLabel(`Safety Route: ${closestSafeSpot.name}`);
-      setProfile("walking");
       setSheetState("preview");
       setShouldStartSafeRoute(true);
     } catch (safeRouteError) {
@@ -363,7 +364,7 @@ export function SafeRouteMap() {
           : "Could not start a safety route.",
       );
     }
-  }, [findSafeSpots, origin, requestCurrentLocation]);
+  }, [findSafeSpots, navigation, origin, requestCurrentLocation]);
 
   useEffect(() => {
     if (!shouldStartSafeRoute || isLoading || !activeRoute || routeError) {
