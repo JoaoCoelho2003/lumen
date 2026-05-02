@@ -22,7 +22,7 @@ import { SearchBar } from "@/components/ui/SearchBar";
 
 const CLOSED_SNAP = "104px";
 const MID_SNAP = 0.35;
-const OPEN_SNAP = 0.9;
+const OPEN_SNAP = 1;
 const SEARCH_SNAP_POINTS = [MID_SNAP, OPEN_SNAP];
 const NAVIGATION_SNAP_POINTS = [CLOSED_SNAP, MID_SNAP, OPEN_SNAP];
 
@@ -79,14 +79,14 @@ export function MapBottomDrawer({
     snapPoint: DrawerSnapPoint;
   }>({
     mode: state,
-    snapPoint: showSearch ? MID_SNAP : CLOSED_SNAP,
+    snapPoint: state === "preview" ? OPEN_SNAP : showSearch ? MID_SNAP : CLOSED_SNAP,
   });
 
   const activeSnapPoint =
     drawerState.mode === state
       ? drawerState.snapPoint
       : state === "preview"
-        ? MID_SNAP
+        ? OPEN_SNAP
         : showSearch
           ? MID_SNAP
           : CLOSED_SNAP;
@@ -100,7 +100,7 @@ export function MapBottomDrawer({
 
   function handleDestinationSelect(result: GeocodingResult) {
     onDestinationSelect(result);
-    setDrawerState({ mode: state, snapPoint: MID_SNAP });
+    setDrawerState({ mode: state, snapPoint: OPEN_SNAP });
   }
 
   return (
@@ -118,7 +118,7 @@ export function MapBottomDrawer({
     >
       <DrawerContent
         showOverlay={false}
-        className="z-40 mx-auto h-[90dvh] max-h-[90dvh] max-w-3xl rounded-t-2xl border-x border-t border-white/10 bg-[#0f1117]/95 p-0 text-white shadow-2xl backdrop-blur-md before:hidden sm:inset-x-4 sm:bottom-4 sm:rounded-2xl sm:border"
+        className="z-40 mx-auto h-[100dvh] max-h-[100dvh] max-w-3xl rounded-t-2xl border-x border-t border-white/10 bg-[#0f1117]/95 p-0 text-white shadow-2xl backdrop-blur-md before:hidden sm:inset-x-4 sm:bottom-4 sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:border"
       >
         <DrawerTitle className="sr-only">Route controls</DrawerTitle>
         <div className="mx-auto mt-3 h-1.5 w-24 shrink-0 rounded-full bg-white/20" />

@@ -37,6 +37,11 @@ export function SearchBar({
     onFocus?.();
   }
 
+  const suggestionsClassName =
+    suggestionsPlacement === "below"
+      ? "relative z-40 mt-2 max-h-[42vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0f1117]/95 shadow-2xl backdrop-blur-md"
+      : "absolute bottom-[calc(100%+0.5rem)] left-0 right-0 z-40 max-h-[42vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0f1117]/95 shadow-2xl backdrop-blur-md";
+
   return (
     <div className="space-y-2">
       <div className="relative">
@@ -72,13 +77,7 @@ export function SearchBar({
 
         {isFocused &&
         (destinationSearch.suggestions.length > 0 || destinationSearch.isLoading) ? (
-          <div
-            className={`absolute left-0 right-0 z-40 max-h-[42vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#0f1117]/95 shadow-2xl backdrop-blur-md ${
-              suggestionsPlacement === "below"
-                ? "top-[calc(100%+0.5rem)]"
-                : "bottom-[calc(100%+0.5rem)]"
-            }`}
-          >
+          <div className={suggestionsClassName}>
             {destinationSearch.isLoading ? (
               <div className="flex items-center gap-2 px-4 py-3 text-sm text-slate-300">
                 <Loader2 className="h-4 w-4 animate-spin" />
