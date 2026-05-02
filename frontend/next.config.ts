@@ -6,6 +6,7 @@ const nextConfig: NextConfig = {
     "127.0.0.1",
     "10.209.233.116",
     "jayleen-hydrometrical-uncavalierly.ngrok-free.dev",
+    "94e2-148-69-201-206.ngrok-free.app"
   ],
 };
 
