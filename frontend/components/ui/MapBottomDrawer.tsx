@@ -8,7 +8,7 @@ import {
   Navigation,
   Route as RouteIcon,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { formatDistance, formatDuration } from "@/lib/mapbox";
 import type {
   Coordinates,
@@ -17,17 +17,21 @@ import type {
   Route,
   TravelProfile,
 } from "@/lib/types";
-import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "@/components/ui/drawer";
 import { SearchBar } from "@/components/ui/SearchBar";
 
-const CLOSED_SNAP = "104px";
 const MID_SNAP = 0.35;
-const OPEN_SNAP = 1;
-const SEARCH_SNAP_POINTS = [MID_SNAP, OPEN_SNAP];
-const NAVIGATION_SNAP_POINTS = [MID_SNAP, OPEN_SNAP];
-const IDLE_SNAP_POINTS = [CLOSED_SNAP, MID_SNAP, OPEN_SNAP];
+const DEFAULT_OPEN_SNAP = 1;
 
-type DrawerSnapPoint = (typeof IDLE_SNAP_POINTS)[number];
+type DrawerSnapPoint = number | string;
+
+function getViewportSnapPoint(): DrawerSnapPoint {
+  if (typeof window === "undefined") {
+    return DEFAULT_OPEN_SNAP;
+  }
+
+  return `${window.innerHeight}px`;
+}
 
 type MapBottomDrawerProps = {
   state: NavigationState;
@@ -75,33 +79,52 @@ export function MapBottomDrawer({
   onStopNavigation,
 }: MapBottomDrawerProps) {
   const showSearch = state !== "navigating";
+  const [openSnapPoint, setOpenSnapPoint] = useState<DrawerSnapPoint>(DEFAULT_OPEN_SNAP);
   const [drawerState, setDrawerState] = useState<{
     mode: NavigationState;
     snapPoint: DrawerSnapPoint;
   }>({
     mode: state,
-    snapPoint: state === "preview" ? OPEN_SNAP : showSearch ? MID_SNAP : CLOSED_SNAP,
+    snapPoint: state === "preview" ? DEFAULT_OPEN_SNAP : MID_SNAP,
   });
 
-  if (drawerState.mode !== state) {
-    setDrawerState({
-      mode: state,
-      snapPoint: state === "preview" ? OPEN_SNAP : MID_SNAP,
-    });
-  }
+  useEffect(() => {
+    function syncOpenSnapPoint() {
+      setOpenSnapPoint(getViewportSnapPoint());
+    }
 
-  const activeSnapPoint = drawerState.snapPoint;
+    window.addEventListener("resize", syncOpenSnapPoint);
+    window.visualViewport?.addEventListener("resize", syncOpenSnapPoint);
+
+    return () => {
+      window.removeEventListener("resize", syncOpenSnapPoint);
+      window.visualViewport?.removeEventListener("resize", syncOpenSnapPoint);
+    };
+  }, []);
+
+  const activeSnapPoint =
+    drawerState.mode === state
+      ? drawerState.snapPoint
+      : state === "preview"
+        ? openSnapPoint
+        : MID_SNAP;
 
   const remainingSteps = route?.steps.slice(activeStepIndex) ?? [];
-  const snapPoints = showSearch ? SEARCH_SNAP_POINTS : NAVIGATION_SNAP_POINTS;
+  const snapPoints = [MID_SNAP, openSnapPoint];
+  const activeSnapPointIsAvailable = snapPoints.includes(activeSnapPoint);
+  const resolvedActiveSnapPoint = activeSnapPointIsAvailable ? activeSnapPoint : openSnapPoint;
 
   function handleSearchFocus() {
-    setDrawerState({ mode: state, snapPoint: OPEN_SNAP });
+    const nextOpenSnapPoint = getViewportSnapPoint();
+    setOpenSnapPoint(nextOpenSnapPoint);
+    setDrawerState({ mode: state, snapPoint: nextOpenSnapPoint });
   }
 
   function handleDestinationSelect(result: GeocodingResult) {
     onDestinationSelect(result);
-    setDrawerState({ mode: state, snapPoint: OPEN_SNAP });
+    const nextOpenSnapPoint = getViewportSnapPoint();
+    setOpenSnapPoint(nextOpenSnapPoint);
+    setDrawerState({ mode: state, snapPoint: nextOpenSnapPoint });
   }
 
   return (
@@ -109,10 +132,11 @@ export function MapBottomDrawer({
       open
       modal={false}
       dismissible={false}
-      snapPoints={snapPoints.filter((s) => typeof s === "number") as number[]}
-      activeSnapPoint={activeSnapPoint}
+      repositionInputs={false}
+      snapPoints={snapPoints}
+      activeSnapPoint={resolvedActiveSnapPoint}
       setActiveSnapPoint={(snapPoint) => {
-        if (snapPoint !== null) {
+        if (snapPoint !== null && snapPoints.includes(snapPoint)) {
           setDrawerState({ mode: state, snapPoint: snapPoint as DrawerSnapPoint });
         }
       }}
@@ -122,6 +146,9 @@ export function MapBottomDrawer({
         className="z-40 mx-auto h-[100dvh] max-h-[100dvh] max-w-3xl rounded-t-2xl border-x border-t border-white/10 bg-[#0f1117]/95 p-0 text-white shadow-2xl backdrop-blur-md before:hidden sm:inset-x-4 sm:bottom-4 sm:h-[calc(100dvh-2rem)] sm:max-h-[calc(100dvh-2rem)] sm:rounded-2xl sm:border"
       >
         <DrawerTitle className="sr-only">Route controls</DrawerTitle>
+        <DrawerDescription className="sr-only">
+          Search for a destination, preview the route, and manage active navigation.
+        </DrawerDescription>
         <div className="mx-auto mt-3 h-1.5 w-24 shrink-0 rounded-full bg-white/20" />
 
         <div className="flex min-h-0 flex-1 flex-col overflow-hidden px-3 pb-3 pt-3 sm:px-4">
