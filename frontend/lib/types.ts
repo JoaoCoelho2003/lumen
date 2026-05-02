@@ -48,6 +48,36 @@ export type Route = {
   duration: number;
 };
 
+export type RouteWeights = {
+  light_weight: number;
+  crime_weight: number;
+};
+
+export type RankedRoute = {
+  name?: string | null;
+  source_route_index?: number | null;
+  score: number;
+  score_percent: number;
+  coverage: number;
+  longest_dark_run_ratio: number;
+  light_points_near_route: number;
+  crime_points_near_route: number;
+  light_density_per_km: number;
+  crime_density_per_km: number;
+  distance_km: number;
+  duration_minutes?: number | null;
+  notes: string[];
+  geometry: LineStringGeometry;
+};
+
+export type MapboxRouteRankResponse = {
+  best_route_index?: number | null;
+  ranked_routes: RankedRoute[];
+  light_data_loaded: boolean;
+  crime_data_loaded: boolean;
+  source: string;
+};
+
 export type NavigationState = "idle" | "preview" | "navigating";
 
 export type NavigationPosition = {

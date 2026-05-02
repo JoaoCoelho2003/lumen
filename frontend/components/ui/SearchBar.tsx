@@ -8,6 +8,7 @@ import type { Coordinates, GeocodingResult } from "@/lib/types";
 type SearchBarProps = {
   destinationLabel: string;
   error?: string | null;
+  proximity?: Coordinates | null;
   suggestionsPlacement?: "above" | "below";
   onFocus?: () => void;
   onDestinationLabelChange: (value: string) => void;
@@ -18,6 +19,7 @@ type SearchBarProps = {
 export function SearchBar({
   destinationLabel,
   error,
+  proximity,
   suggestionsPlacement = "above",
   onFocus,
   onDestinationLabelChange,
@@ -25,7 +27,10 @@ export function SearchBar({
   onDestinationCoordinatesChange,
 }: SearchBarProps) {
   const [isFocused, setIsFocused] = useState(false);
-  const destinationSearch = useGeocoding(isFocused ? destinationLabel : "");
+  const destinationSearch = useGeocoding(
+    isFocused ? destinationLabel : "",
+    proximity,
+  );
 
   function handleResultClick(result: GeocodingResult) {
     onDestinationSelect(result);

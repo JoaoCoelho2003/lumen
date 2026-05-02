@@ -218,7 +218,7 @@ export function BottomSheet({
             className="flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-primary px-4 text-sm font-semibold text-primary-foreground transition-all duration-300 ease-out hover:bg-primary/90 disabled:cursor-not-allowed disabled:bg-muted disabled:text-muted-foreground"
           >
             <RouteIcon className="h-5 w-5" />
-            Start Journey
+            Start Trip
           </button>
         </div>
       </section>

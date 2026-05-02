@@ -1,4 +1,9 @@
-import type { Coordinates, RouteStep } from "@/lib/types";
+import type {
+  Coordinates,
+  MapboxDirectionsRoute,
+  Route,
+  RouteStep,
+} from "@/lib/types";
 
 const EARTH_RADIUS_METERS = 6_371_000;
 
@@ -227,6 +232,34 @@ export function getBoundsFromCoordinates(coordinates: Coordinates[]) {
       maxLat: firstCoordinate[1],
     },
   );
+}
+
+export function mapboxRouteToRoute(route: MapboxDirectionsRoute): Route {
+  const steps: RouteStep[] = route.legs.flatMap((leg) =>
+    leg.steps.map((step) => ({
+      instruction: step.maneuver.instruction ?? "Continue",
+      maneuver: {
+        type: step.maneuver.type,
+        modifier: step.maneuver.modifier,
+        location: step.maneuver.location,
+      },
+      distance: step.distance,
+      duration: step.duration,
+    })),
+  );
+
+  const origin = route.geometry.coordinates[0] ?? [0, 0];
+  const destination =
+    route.geometry.coordinates[route.geometry.coordinates.length - 1] ?? origin;
+
+  return {
+    origin,
+    destination,
+    geometry: route.geometry,
+    steps,
+    distance: route.distance,
+    duration: route.duration,
+  };
 }
 
 export function formatDistance(meters: number): string {

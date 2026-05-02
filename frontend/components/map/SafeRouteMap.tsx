@@ -4,13 +4,12 @@ import "mapbox-gl/dist/mapbox-gl.css";
 import "@mapbox/mapbox-gl-geocoder/dist/mapbox-gl-geocoder.css";
 
 import { Crosshair, LightbulbOff, Loader2, TriangleAlert } from "lucide-react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Map, { type MapRef } from "react-map-gl";
 import { useSession } from "next-auth/react";
 import { useDirections } from "@/hooks/useDirections";
 import { useNavigation } from "@/hooks/useNavigation";
-import { usePins } from "@/hooks/usePins";
-import { useSafeSpots } from "@/hooks/useSafeSpots";
+import { useCreatePin, useGetPins } from "@/app/api/queries/pins";
 
 import {
   DAY_STYLE_START_HOUR,
@@ -20,24 +19,24 @@ import {
   NIGHT_STYLE_START_HOUR,
   PORTUGAL_BOUNDS,
   PORTUGAL_TIME_ZONE,
-} from "@/lib/constants";
+} from "../../lib/constants";
 
 import {
   calculateBearing,
   calculateDistance,
   getBoundsFromCoordinates,
-} from "@/lib/mapbox";
+} from "../../lib/mapbox";
 import type {
   Coordinates,
   GeocodingResult,
   NavigationState,
   PinType,
   TravelProfile,
-} from "@/lib/types";
+} from "../../lib/types";
 import type { PinTag } from "@/components/ui/PinTags";
-import { CrimeLayer } from "@/components/map/CrimeLayer";
-import { HeatmapLayer } from "@/components/map/HeatmapLayer";
-import { MarkerLayer } from "@/components/map/MarkerLayer";
+import { CrimeLayer } from "../../components/map/CrimeLayer";
+import { HeatmapLayer } from "../../components/map/HeatmapLayer";
+import { MarkerLayer } from "../../components/map/MarkerLayer";
 import { PinLayer } from "@/components/map/PinLayer";
 import { RouteLayer } from "@/components/map/RouteLayer";
 import { LayerToggles } from "@/components/ui/LayerToggles";
@@ -45,6 +44,9 @@ import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
 import { NavigationBar } from "@/components/ui/NavigationBar";
 import { PinTags } from "@/components/ui/PinTags";
 import { RightSideDrawer } from "@/components/ui/RightSideDrawer";
+import { useSafeSpots } from "@/app/api/queries/safe-spots";
+import { UserMenu } from "@/components/ui/UserMenu";
+import { useRouteWeights } from "@/hooks/useRouteWeights";
 
 function getPortugalHour() {
   const hour = new Intl.DateTimeFormat("en-GB", {
@@ -64,11 +66,8 @@ function getTimeBasedMapStyle(hour: number) {
   return MAP_STYLES.dark;
 }
 
-function coordinatesMatch(first: Coordinates, second: Coordinates) {
-  return first[0] === second[0] && first[1] === second[1];
-}
-
 const SAFE_SPOT_MARKER_MIN_ZOOM = 13;
+const PIN_MARKER_MIN_ZOOM = 13;
 const FAST_LOCATION_OPTIONS: PositionOptions = {
   enableHighAccuracy: false,
   timeout: 3_000,
@@ -95,34 +94,50 @@ export function SafeRouteMap() {
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [pinFeedback, setPinFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [pinDrawerOpen, setPinDrawerOpen] = useState(false);
 
-  const { data: session } = useSession();
+  const { data: session, status: sessionStatus } = useSession();
   const userId = session?.user?.name ?? undefined;
-  const { pins, addPin } = usePins();
+  const pins = useGetPins();
+  const addPin = useCreatePin();
   const [mapZoom, setMapZoom] = useState(DEFAULT_VIEW_STATE.zoom);
   const [safeSpotsEnabled, setSafeSpotsEnabled] = useState(true);
   const [selectedSafeSpotId, setSelectedSafeSpotId] = useState<string | null>(
     null,
   );
   const [shouldStartSafeRoute, setShouldStartSafeRoute] = useState(false);
+  const [shouldAutoStartRoute, setShouldAutoStartRoute] = useState(false);
   const lastSafeSpotOriginRef = useRef<Coordinates | null>(null);
   const lastLocationAccuracyRef = useRef(Number.POSITIVE_INFINITY);
 
-  const { route, isLoading, error } = useDirections(
+  const {
+    weights,
+    draftWeights,
+    isLoading: isWeightsLoading,
+    isSaving: isWeightsSaving,
+    error: weightsError,
+    hasPendingChanges: hasPendingWeightChanges,
+    setLightWeight,
+    setCrimeWeight,
+    saveWeights,
+  } = useRouteWeights();
+
+  const {
+    route,
+    rankedRoutes,
+    selectedRouteIndex,
+    isLoading,
+    error,
+    selectRouteByIndex,
+  } = useDirections(
     origin,
     destination,
     profile,
+    weights,
   );
   const { safeSpots, isLoadingSafeSpots, safeSpotsError, findSafeSpots } =
     useSafeSpots();
-  const activeRoute =
-    origin &&
-    destination &&
-    route &&
-    coordinatesMatch(route.origin, origin) &&
-    coordinatesMatch(route.destination, destination)
-      ? route
-      : null;
+  const activeRoute = origin && destination && route ? route : null;
   const navigation = useNavigation(activeRoute, profile);
   const metricsOptions = {
     performanceMetricsCollection: false,
@@ -130,17 +145,7 @@ export function SafeRouteMap() {
   const mapStyle = satelliteEnabled
     ? MAP_STYLES.satellite
     : getTimeBasedMapStyle(portugalHour);
-  const activeStep = activeRoute?.steps[navigation.stepIndex] ?? null;
-  const distanceToNextManeuver = useMemo(() => {
-    if (!activeStep || !navigation.position) {
-      return 0;
-    }
-
-    return calculateDistance(
-      navigation.position.coordinates,
-      activeStep.maneuver.location,
-    );
-  }, [activeStep, navigation.position]);
+  
   const durationRemaining = activeRoute
     ? (navigation.distanceRemaining / Math.max(activeRoute.distance, 1)) *
       activeRoute.duration
@@ -148,6 +153,7 @@ export function SafeRouteMap() {
   const routeError = navigation.error ?? error ?? safeSpotsError;
   const showSafeSpotMarkers =
     safeSpotsEnabled && (mapZoom >= SAFE_SPOT_MARKER_MIN_ZOOM || Boolean(selectedSafeSpotId));
+  const showPinMarkers = mapZoom >= PIN_MARKER_MIN_ZOOM;
 
   useEffect(() => {
     if (activeRoute && sheetState !== "navigating" && !shouldStartSafeRoute) {
@@ -247,6 +253,7 @@ export function SafeRouteMap() {
     setDestinationLabel(result.place_name);
     setSelectedSafeSpotId(null);
     setShouldStartSafeRoute(false);
+    setShouldAutoStartRoute(false);
   }
 
   const handleDestinationLabelChange = useCallback((value: string) => {
@@ -265,6 +272,7 @@ export function SafeRouteMap() {
       setDestination(coordinates);
       setSelectedSafeSpotId(null);
       setShouldStartSafeRoute(false);
+      setShouldAutoStartRoute(false);
 
       if (!coordinates) {
         setSheetState("idle");
@@ -452,6 +460,32 @@ export function SafeRouteMap() {
   ]);
 
   useEffect(() => {
+    if (
+      !shouldAutoStartRoute ||
+      shouldStartSafeRoute ||
+      isLoading ||
+      !activeRoute ||
+      routeError
+    ) {
+      return;
+    }
+
+    const autoStartRoute = window.setTimeout(() => {
+      handleStartJourney();
+      setShouldAutoStartRoute(false);
+    }, 0);
+
+    return () => window.clearTimeout(autoStartRoute);
+  }, [
+    activeRoute,
+    handleStartJourney,
+    isLoading,
+    routeError,
+    shouldAutoStartRoute,
+    shouldStartSafeRoute,
+  ]);
+
+  useEffect(() => {
     if (shouldStartSafeRoute && routeError) {
       const resetSafetyRoute = window.setTimeout(() => {
         setShouldStartSafeRoute(false);
@@ -488,10 +522,17 @@ export function SafeRouteMap() {
   }, [requestMyLocation]);
 
   async function handlePinConfirm(tag: PinTag) {
+    if (sessionStatus !== "authenticated" || !userId) {
+      setPinFeedback({ ok: false, msg: "Log in to submit pins." });
+      window.setTimeout(() => setPinFeedback(null), 3000);
+      return;
+    }
+
     const coords: Coordinates =
       origin ?? (mapRef.current ? [mapRef.current.getCenter().lng, mapRef.current.getCenter().lat] : null) ?? [0, 0];
 
     const ok = await addPin(coords, tag.value as PinType, userId);
+    setPinDrawerOpen(false);
     setPinFeedback(ok ? { ok: true, msg: "Pin submitted!" } : { ok: false, msg: "Failed to save pin." });
     window.setTimeout(() => setPinFeedback(null), 3000);
   }
@@ -544,27 +585,15 @@ export function SafeRouteMap() {
 
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-background text-foreground">
-      {/* Navigation Top Bar */}
-      {sheetState === "navigating" && (
-        <NavigationBar
-          step={activeStep}
-          distanceToNextManeuver={distanceToNextManeuver}
-        />
-      )}
-
       {locationError && (
         <div className="pointer-events-none p-3 fixed inset-x-4 top-4 z-40 rounded-xl border border-destructive/40 bg-destructive/15 text-xs text-destructive shadow-2xl backdrop-blur-md">
           {locationError}
         </div>
       )}
 
-      {pinFeedback && (
-        <div
-          className={`pointer-events-none p-3 fixed inset-x-4 top-16 z-40 rounded-xl border text-xs shadow-2xl backdrop-blur-md ${pinFeedback.ok ? "border-emerald-500/40 bg-emerald-500/15 text-emerald-400" : "border-destructive/40 bg-destructive/15 text-destructive"}`}
-        >
-          {pinFeedback.msg}
-        </div>
-      )}
+      <div className="fixed right-3 top-3 z-10">
+        <UserMenu />
+      </div>
 
       {/*Map*/}
       <Map
@@ -593,6 +622,7 @@ export function SafeRouteMap() {
           route={activeRoute}
           distanceTravelled={navigation.distanceTravelled}
         />
+        <PinLayer pins={pins} visible={showPinMarkers} />
         <MarkerLayer
           origin={origin}
           destination={destination}
@@ -601,7 +631,6 @@ export function SafeRouteMap() {
           selectedSafeSpotId={selectedSafeSpotId}
           showSafeSpots={showSafeSpotMarkers}
         />
-        <PinLayer pins={pins} />
       </Map>
 
       {/* side options */}
@@ -635,6 +664,21 @@ export function SafeRouteMap() {
         title="Pin Allert"
         description="Alert about pins on the route. Tap to view details."
         triggerLabel="Open quick settings"
+        open={pinDrawerOpen}
+        onOpenChange={setPinDrawerOpen}
+        inlineStatus={
+          pinFeedback ? (
+            <div
+              className={`pointer-events-none w-[calc(100vw-5.5rem)] max-w-sm rounded-xl border px-3 py-2 text-xs shadow-2xl backdrop-blur-md transition-all duration-300 ease-out ${
+                pinFeedback.ok
+                  ? "border-success/40 bg-success/15 text-success"
+                  : "border-destructive/40 bg-destructive/15 text-destructive"
+              }`}
+            >
+              {pinFeedback.msg}
+            </div>
+          ) : null
+        }
       >
         <PinTags tags={pinTags} onConfirm={handlePinConfirm} />
       </RightSideDrawer>
@@ -642,11 +686,19 @@ export function SafeRouteMap() {
       <MapBottomDrawer
         state={sheetState}
         route={activeRoute}
+        rankedRoutes={rankedRoutes}
+        selectedRouteIndex={selectedRouteIndex}
         destinationName={destinationLabel}
         destinationLabel={destinationLabel}
+        searchProximity={origin}
         profile={profile}
         isLoadingRoute={isLoading}
         error={routeError}
+        weights={draftWeights}
+        isWeightsLoading={isWeightsLoading}
+        isWeightsSaving={isWeightsSaving}
+        weightsError={weightsError}
+        hasPendingWeightChanges={hasPendingWeightChanges}
         distanceRemaining={navigation.distanceRemaining}
         durationRemaining={durationRemaining}
         activeStepIndex={navigation.stepIndex}
@@ -654,6 +706,10 @@ export function SafeRouteMap() {
         onDestinationSelect={handleDestinationSelect}
         onDestinationCoordinatesChange={handleDestinationCoordinatesChange}
         onProfileChange={setProfile}
+        onSelectRoute={selectRouteByIndex}
+        onLightWeightChange={setLightWeight}
+        onCrimeWeightChange={setCrimeWeight}
+        onSaveWeights={saveWeights}
         onStartJourney={handleStartJourney}
         onStopNavigation={handleStopNavigation}
         onSafetyRoute={handleSafetyRoute}
