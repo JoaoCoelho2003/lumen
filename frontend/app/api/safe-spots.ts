@@ -1,5 +1,6 @@
 import { MAPBOX_TOKEN } from "@/lib/constants";
 import { calculateDistance } from "@/lib/mapbox";
+import { getCrowdSafeSpots } from "./crowds";
 import type {
   Coordinates,
   MapboxGeocodingResponse,
@@ -172,15 +173,20 @@ async function fetchOverpassSafeSpots(origin: Coordinates): Promise<SafeSpot[]> 
 
 export async function fetchSafeSpots(origin: Coordinates): Promise<SafeSpot[]> {
   try {
-    const [mapboxSpots, overpassSpots] = await Promise.all([
+    const [mapboxSpots, overpassSpots, crowdSpots] = await Promise.all([
       fetchMapboxSafeSpots(origin).catch(() => []),
       fetchOverpassSafeSpots(origin).catch(() => []),
+      getCrowdSafeSpots(origin).catch(() => []),
     ]);
 
-    const spots = dedupeSafeSpots([...overpassSpots, ...mapboxSpots]).slice(0, 20);
+    const spots = dedupeSafeSpots([
+      ...crowdSpots,
+      ...overpassSpots,
+      ...mapboxSpots,
+    ]).slice(0, 20);
 
     if (spots.length === 0) {
-      throw new Error("No police stations, fire stations, or hospitals were found nearby.");
+      throw new Error("No safe spots were found nearby.");
     }
 
     return spots;

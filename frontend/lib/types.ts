@@ -12,7 +12,7 @@ export type GeocodingResult = {
   }>;
 };
 
-export type SafeSpotKind = "police" | "fire" | "hospital";
+export type SafeSpotKind = "police" | "fire" | "hospital" | "crowd";
 
 export type SafeSpot = {
   id: string;
@@ -21,6 +21,7 @@ export type SafeSpot = {
   coordinates: Coordinates;
   kind: SafeSpotKind;
   distance: number;
+  crowd_count?: number;
 };
 
 export type RouteStep = {

@@ -20,7 +20,7 @@ export function useSafeSpots(): SafeSpotsState {
     queryKey: ["safe-spots", origin],
     queryFn: () => fetchSafeSpots(origin!),
     enabled: !!origin,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 30_000,
     retry: false,
   });
 
@@ -34,7 +34,7 @@ export function useSafeSpots(): SafeSpotsState {
         return await queryClient.fetchQuery({
           queryKey: ["safe-spots", nextOrigin],
           queryFn: () => fetchSafeSpots(nextOrigin),
-          staleTime: 5 * 60 * 1000,
+          staleTime: 30_000,
         });
       } catch {
         throw new Error("Failed to fetch safe spots. Please try again later.");

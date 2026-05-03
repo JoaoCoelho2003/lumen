@@ -1,6 +1,6 @@
 "use client";
 
-import { Flame, Hospital, MapPin, Navigation, ShieldCheck } from "lucide-react";
+import { Flame, Hospital, MapPin, Navigation, ShieldCheck, Users } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Marker } from "react-map-gl";
 import type { Coordinates, NavigationPosition, SafeSpot } from "@/lib/types";
@@ -12,9 +12,16 @@ type MarkerLayerProps = {
   safeSpots: SafeSpot[];
   selectedSafeSpotId: string | null;
   showSafeSpots: boolean;
+  zoom: number;
 };
 
 function getSafeSpotStyle(kind: SafeSpot["kind"], selected: boolean) {
+  if (kind === "crowd") {
+    return selected
+      ? "border-violet-100 bg-violet-600 text-white shadow-violet-600/30"
+      : "border-background/90 bg-card text-violet-600 shadow-violet-600/20";
+  }
+
   if (kind === "fire") {
     return selected
       ? "border-red-100 bg-red-600 text-white shadow-red-600/30"
@@ -36,14 +43,18 @@ function SafeSpotMarker({
   safeSpot,
   selected,
   visible,
+  zoom,
 }: {
   safeSpot: SafeSpot;
   selected: boolean;
   visible: boolean;
+  zoom: number;
 }) {
   const [mounted, setMounted] = useState(false);
   const Icon =
-    safeSpot.kind === "fire"
+    safeSpot.kind === "crowd"
+      ? Users
+      : safeSpot.kind === "fire"
       ? Flame
       : safeSpot.kind === "hospital"
         ? Hospital
@@ -58,6 +69,10 @@ function SafeSpotMarker({
   }, []);
 
   const markerVisible = mounted && visible;
+  const crowdHaloSize =
+    zoom >= 15 ? 80 : zoom >= 13 ? 64 : zoom >= 11 ? 48 : 36;
+  const crowdMarkerSize = zoom >= 11 ? 40 : 34;
+  const crowdHaloOffset = crowdMarkerSize / 2;
 
   return (
     <Marker
@@ -66,14 +81,40 @@ function SafeSpotMarker({
       anchor="bottom"
     >
       <div
-        className={`flex h-9 w-9 items-center justify-center rounded-full border-2 shadow-lg transition-all delay-300 duration-300 ease-out ${
+        className={`relative flex flex-col items-center transition-all delay-300 duration-300 ease-out ${
           markerVisible
             ? "pointer-events-auto translate-y-0 scale-100 opacity-100"
             : "pointer-events-none translate-y-1 scale-75 opacity-0"
-        } ${getSafeSpotStyle(safeSpot.kind, selected)}`}
+        }`}
         title={safeSpot.name}
       >
-        <Icon className="h-5 w-5" />
+        {safeSpot.kind === "crowd" && safeSpot.crowd_count ? (
+          <span className="mb-1 rounded-full border border-violet-100 bg-violet-600 px-2 py-0.5 text-[11px] font-semibold leading-none text-white shadow-lg shadow-violet-600/25">
+            {safeSpot.crowd_count}
+          </span>
+        ) : null}
+        {safeSpot.kind === "crowd" ? (
+          <span
+            className="absolute left-1/2 -translate-x-1/2 translate-y-1/2 rounded-full bg-violet-500/20 ring-1 ring-violet-500/25"
+            style={{
+              bottom: crowdHaloOffset,
+              height: crowdHaloSize,
+              width: crowdHaloSize,
+            }}
+          />
+        ) : null}
+        <span
+          className={`relative z-10 flex items-center justify-center rounded-full border-2 shadow-lg ${
+            safeSpot.kind === "crowd" ? "" : "h-9 w-9"
+          } ${getSafeSpotStyle(safeSpot.kind, selected)}`}
+          style={
+            safeSpot.kind === "crowd"
+              ? { height: crowdMarkerSize, width: crowdMarkerSize }
+              : undefined
+          }
+        >
+          <Icon className="h-5 w-5" />
+        </span>
       </div>
     </Marker>
   );
@@ -86,6 +127,7 @@ export function MarkerLayer({
   safeSpots,
   selectedSafeSpotId,
   showSafeSpots,
+  zoom,
 }: MarkerLayerProps) {
   return (
     <>
@@ -95,6 +137,7 @@ export function MarkerLayer({
           safeSpot={safeSpot}
           selected={safeSpot.id === selectedSafeSpotId}
           visible={showSafeSpots}
+          zoom={zoom}
         />
       ))}
       {origin && (

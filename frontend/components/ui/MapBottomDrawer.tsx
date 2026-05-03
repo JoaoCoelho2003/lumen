@@ -60,6 +60,8 @@ type MapBottomDrawerProps = {
   isWeightsSaving: boolean;
   weightsError: string | null;
   hasPendingWeightChanges: boolean;
+  crowdPresenceEnabled: boolean;
+  isSharingCrowdPresence: boolean;
   distanceRemaining: number;
   durationRemaining: number;
   activeStepIndex: number;
@@ -77,6 +79,7 @@ type MapBottomDrawerProps = {
   isSafetyRouteLoading: boolean;
   safeSpotsEnabled: boolean;
   onSafeSpotsEnabledChange: (enabled: boolean) => void;
+  onCrowdPresenceEnabledChange: (enabled: boolean) => void;
 };
 
 function ManeuverIcon({ type }: { type: string }) {
@@ -98,7 +101,10 @@ type SettingsPanelProps = {
   weightsError: string | null;
   hasPendingWeightChanges: boolean;
   safeSpotsEnabled: boolean;
+  crowdPresenceEnabled: boolean;
+  isSharingCrowdPresence: boolean;
   onSafeSpotsEnabledChange: (enabled: boolean) => void;
+  onCrowdPresenceEnabledChange: (enabled: boolean) => void;
   onLightWeightChange: (value: number) => void;
   onCrimeWeightChange: (value: number) => void;
   onSaveWeights: () => Promise<void>;
@@ -111,7 +117,10 @@ function SettingsPanel({
   weightsError,
   hasPendingWeightChanges,
   safeSpotsEnabled,
+  crowdPresenceEnabled,
+  isSharingCrowdPresence,
   onSafeSpotsEnabledChange,
+  onCrowdPresenceEnabledChange,
   onLightWeightChange,
   onCrimeWeightChange,
   onSaveWeights,
@@ -142,6 +151,27 @@ function SettingsPanel({
             checked={safeSpotsEnabled}
             onCheckedChange={onSafeSpotsEnabledChange}
             aria-label="Toggle safe spots"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              Crowd safety sharing
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Share anonymous presence to create crowd safe spots
+            </p>
+            {isSharingCrowdPresence ? (
+              <p className="mt-1 text-xs text-primary">Sharing active location</p>
+            ) : null}
+          </div>
+          <Switch
+            checked={crowdPresenceEnabled}
+            onCheckedChange={onCrowdPresenceEnabledChange}
+            aria-label="Toggle crowd safety sharing"
           />
         </div>
       </div>
@@ -382,6 +412,8 @@ export function MapBottomDrawer({
   isWeightsSaving,
   weightsError,
   hasPendingWeightChanges,
+  crowdPresenceEnabled,
+  isSharingCrowdPresence,
   distanceRemaining,
   durationRemaining,
   activeStepIndex,
@@ -399,6 +431,7 @@ export function MapBottomDrawer({
   isSafetyRouteLoading,
   safeSpotsEnabled,
   onSafeSpotsEnabledChange,
+  onCrowdPresenceEnabledChange,
 }: MapBottomDrawerProps) {
   const showSearch = state !== "navigating";
   const [openSnapPoint, setOpenSnapPoint] =
@@ -509,7 +542,10 @@ export function MapBottomDrawer({
                     weightsError={weightsError}
                     hasPendingWeightChanges={hasPendingWeightChanges}
                     safeSpotsEnabled={safeSpotsEnabled}
+                    crowdPresenceEnabled={crowdPresenceEnabled}
+                    isSharingCrowdPresence={isSharingCrowdPresence}
                     onSafeSpotsEnabledChange={onSafeSpotsEnabledChange}
+                    onCrowdPresenceEnabledChange={onCrowdPresenceEnabledChange}
                     onLightWeightChange={onLightWeightChange}
                     onCrimeWeightChange={onCrimeWeightChange}
                     onSaveWeights={onSaveWeights}

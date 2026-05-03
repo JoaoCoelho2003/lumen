@@ -8,6 +8,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Map, { type MapRef } from "react-map-gl";
 import { useSession } from "next-auth/react";
 import { useDirections } from "@/hooks/useDirections";
+import { useCrowdPresence } from "@/hooks/useCrowdPresence";
 import { useNavigation } from "@/hooks/useNavigation";
 import { useCreatePin, useGetPins } from "@/app/api/queries/pins";
 
@@ -139,6 +140,12 @@ export function SafeRouteMap() {
     useSafeSpots();
   const activeRoute = origin && destination && route ? route : null;
   const navigation = useNavigation(activeRoute, profile);
+  const crowdPresenceCoordinates = navigation.position?.coordinates ?? origin;
+  const {
+    crowdPresenceEnabled,
+    setCrowdPresenceEnabled,
+    isSharingCrowdPresence,
+  } = useCrowdPresence(crowdPresenceCoordinates);
   const metricsOptions = {
     performanceMetricsCollection: false,
   };
@@ -630,6 +637,7 @@ export function SafeRouteMap() {
           safeSpots={safeSpots}
           selectedSafeSpotId={selectedSafeSpotId}
           showSafeSpots={showSafeSpotMarkers}
+          zoom={mapZoom}
         />
       </Map>
 
@@ -699,6 +707,8 @@ export function SafeRouteMap() {
         isWeightsSaving={isWeightsSaving}
         weightsError={weightsError}
         hasPendingWeightChanges={hasPendingWeightChanges}
+        crowdPresenceEnabled={crowdPresenceEnabled}
+        isSharingCrowdPresence={isSharingCrowdPresence}
         distanceRemaining={navigation.distanceRemaining}
         durationRemaining={durationRemaining}
         activeStepIndex={navigation.stepIndex}
@@ -710,6 +720,7 @@ export function SafeRouteMap() {
         onLightWeightChange={setLightWeight}
         onCrimeWeightChange={setCrimeWeight}
         onSaveWeights={saveWeights}
+        onCrowdPresenceEnabledChange={setCrowdPresenceEnabled}
         onStartJourney={handleStartJourney}
         onStopNavigation={handleStopNavigation}
         onSafetyRoute={handleSafetyRoute}
