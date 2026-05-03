@@ -69,14 +69,14 @@ export default function InstallPrompt() {
 
         .lumen-install-inner {
           background: #0f1012;
-          border-top: 1px solid rgba(130, 0, 219, 0.25);
+          border-top: 1px solid rgba(34, 211, 238, 0.35);
           border-radius: 20px 20px 0 0;
           padding: 28px 24px 36px;
           position: relative;
           overflow: hidden;
         }
 
-        /* Purple glow top edge */
+        /* Accent glow top edge */
         .lumen-install-inner::before {
           content: '';
           position: absolute;
@@ -85,7 +85,7 @@ export default function InstallPrompt() {
           transform: translateX(-50%);
           width: 60%;
           height: 1px;
-          background: linear-gradient(90deg, transparent, #8200db, transparent);
+          background: linear-gradient(90deg, transparent, #22d3ee, transparent);
         }
 
         /* Ambient glow */
@@ -97,7 +97,7 @@ export default function InstallPrompt() {
           transform: translateX(-50%);
           width: 280px;
           height: 120px;
-          background: radial-gradient(ellipse, rgba(130, 0, 219, 0.15) 0%, transparent 70%);
+          background: radial-gradient(ellipse, rgba(34, 211, 238, 0.16) 0%, transparent 70%);
           pointer-events: none;
         }
 
@@ -120,18 +120,18 @@ export default function InstallPrompt() {
           width: 48px;
           height: 48px;
           border-radius: 12px;
-          background: linear-gradient(135deg, #8200db, #5a0098);
+          background: linear-gradient(135deg, #22d3ee, #0891b2);
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          box-shadow: 0 0 20px rgba(130, 0, 219, 0.4);
+          box-shadow: 0 0 20px rgba(34, 211, 238, 0.38);
         }
 
         .lumen-install-icon svg {
           width: 26px;
           height: 26px;
-          color: #fff;
+          color: #061013;
         }
 
         .lumen-install-title {
@@ -145,7 +145,7 @@ export default function InstallPrompt() {
         .lumen-install-subtitle {
           font-size: 12px;
           font-weight: 500;
-          color: #8200db;
+          color: #22d3ee;
           letter-spacing: 0.6px;
           text-transform: uppercase;
           margin: 0;
@@ -169,8 +169,8 @@ export default function InstallPrompt() {
           display: flex;
           align-items: center;
           gap: 6px;
-          background: rgba(130, 0, 219, 0.1);
-          border: 1px solid rgba(130, 0, 219, 0.2);
+          background: rgba(34, 211, 238, 0.1);
+          border: 1px solid rgba(34, 211, 238, 0.22);
           border-radius: 20px;
           padding: 5px 12px;
           font-size: 12px;
@@ -182,7 +182,7 @@ export default function InstallPrompt() {
           width: 5px;
           height: 5px;
           border-radius: 50%;
-          background: #8200db;
+          background: #22d3ee;
           flex-shrink: 0;
         }
 
@@ -194,8 +194,8 @@ export default function InstallPrompt() {
         .lumen-btn-install {
           flex: 1;
           padding: 14px;
-          background: linear-gradient(135deg, #8200db, #6600af);
-          color: #fff;
+          background: linear-gradient(135deg, #22d3ee, #06b6d4);
+          color: #061013;
           border: none;
           border-radius: 12px;
           font-family: 'DM Sans', sans-serif;
@@ -206,7 +206,7 @@ export default function InstallPrompt() {
           transition: all 0.2s ease;
           position: relative;
           overflow: hidden;
-          box-shadow: 0 4px 20px rgba(130, 0, 219, 0.35);
+          box-shadow: 0 4px 20px rgba(34, 211, 238, 0.3);
         }
 
         .lumen-btn-install::before {
@@ -240,8 +240,8 @@ export default function InstallPrompt() {
 
         /* iOS instruction box */
         .lumen-ios-steps {
-          background: rgba(130, 0, 219, 0.07);
-          border: 1px solid rgba(130, 0, 219, 0.18);
+          background: rgba(34, 211, 238, 0.08);
+          border: 1px solid rgba(34, 211, 238, 0.2);
           border-radius: 12px;
           padding: 14px 16px;
           margin-bottom: 20px;
@@ -264,8 +264,8 @@ export default function InstallPrompt() {
           width: 18px;
           height: 18px;
           border-radius: 50%;
-          background: rgba(130, 0, 219, 0.3);
-          color: #c270ff;
+          background: rgba(34, 211, 238, 0.25);
+          color: #67e8f9;
           font-size: 11px;
           font-weight: 600;
           display: flex;

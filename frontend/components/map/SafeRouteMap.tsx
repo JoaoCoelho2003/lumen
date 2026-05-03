@@ -42,6 +42,7 @@ import { PinLayer } from "@/components/map/PinLayer";
 import { RouteLayer } from "@/components/map/RouteLayer";
 import { LayerToggles } from "@/components/ui/LayerToggles";
 import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
+import { NavigationBar } from "@/components/ui/NavigationBar";
 import { PinTags } from "@/components/ui/PinTags";
 import { RightSideDrawer } from "@/components/ui/RightSideDrawer";
 import { useSafeSpots } from "@/app/api/queries/safe-spots";
@@ -154,6 +155,15 @@ export function SafeRouteMap() {
   const durationRemaining = activeRoute
     ? (navigation.distanceRemaining / Math.max(activeRoute.distance, 1)) *
       activeRoute.duration
+    : 0;
+  const activeStep = activeRoute?.steps[navigation.stepIndex] ?? null;
+  const distanceToNextManeuver = activeStep
+    ? calculateDistance(
+        navigation.position?.coordinates ??
+          origin ??
+          activeStep.maneuver.location,
+        activeStep.maneuver.location,
+      )
     : 0;
   const routeError = navigation.error ?? error ?? safeSpotsError;
   const showSafeSpotMarkers =
@@ -595,6 +605,13 @@ export function SafeRouteMap() {
           zoom={mapZoom}
         />
       </Map>
+
+      {sheetState === "navigating" ? (
+        <NavigationBar
+          step={activeStep}
+          distanceToNextManeuver={distanceToNextManeuver}
+        />
+      ) : null}
 
       {/* side options */}
 

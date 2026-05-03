@@ -4,18 +4,18 @@ import { Layer, Source } from "react-map-gl";
 import { useCrimeStreets } from "@/app/api/queries/map-data";
 
 // Piecewise linear curve:
-// 00h–03h → 1.0 (pico noturno)
-// 03h–06h → 1.0→0.3 (amanhecer, desce)
-// 06h–15h → 0.3 (dia, mínimo)
-// 15h–19h → 0.3→0.65 (tarde, sobe ligeiramente)
-// 19h–22h → 0.65→1.0 (noite, sobe)
-// 22h–24h → 1.0 (pico noturno)
+// 00h-03h -> 1.0 night peak
+// 03h-06h -> 1.0 to 0.45 sunrise decrease
+// 06h-15h -> 0.45 daytime minimum
+// 15h-19h -> 0.45 to 0.7 late-day increase
+// 19h-22h -> 0.7 to 1.0 evening increase
+// 22h-24h -> 1.0 night peak
 const CURVE: [number, number][] = [
   [0, 1.0],
   [3, 1.0],
-  [6, 0.3],
-  [15, 0.3],
-  [19, 0.65],
+  [6, 0.45],
+  [15, 0.45],
+  [19, 0.7],
   [22, 1.0],
   [24, 1.0],
 ];
@@ -52,9 +52,9 @@ export function CrimeLayer({
         type="line"
         filter={["==", ["get", "crime_level"], "baixo"]}
         paint={{
-          "line-color": "#f97316",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1, 16, 3],
-          "line-opacity": 0.35 * m,
+          "line-color": "#fb923c",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.4, 16, 3.5],
+          "line-opacity": 0.52 * m,
         }}
         layout={{ "line-cap": "round", "line-join": "round" }}
       />
@@ -63,9 +63,9 @@ export function CrimeLayer({
         type="line"
         filter={["==", ["get", "crime_level"], "medio"]}
         paint={{
-          "line-color": "#ef4444",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 1.5, 16, 4],
-          "line-opacity": 0.6 * m,
+          "line-color": "#f87171",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 2, 16, 4.5],
+          "line-opacity": 0.72 * m,
         }}
         layout={{ "line-cap": "round", "line-join": "round" }}
       />
@@ -74,10 +74,10 @@ export function CrimeLayer({
         type="line"
         filter={["==", ["get", "crime_level"], "alto"]}
         paint={{
-          "line-color": "#dc2626",
-          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 2.5, 16, 6],
-          "line-opacity": 0.85 * m,
-          "line-blur": 1,
+          "line-color": "#ef4444",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 10, 3, 16, 6.5],
+          "line-opacity": 0.9 * m,
+          "line-blur": 0.6,
         }}
         layout={{ "line-cap": "round", "line-join": "round" }}
       />
