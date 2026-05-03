@@ -148,8 +148,9 @@ export function SafeRouteMap() {
     ? MAP_STYLES.satellite
     : getTimeBasedMapStyle(portugalHour);
   const isDaytime =
-    portugalHour >= DAY_STYLE_START_HOUR && portugalHour < NIGHT_STYLE_START_HOUR;
-  
+    portugalHour >= DAY_STYLE_START_HOUR &&
+    portugalHour < NIGHT_STYLE_START_HOUR;
+
   const durationRemaining = activeRoute
     ? (navigation.distanceRemaining / Math.max(activeRoute.distance, 1)) *
       activeRoute.duration

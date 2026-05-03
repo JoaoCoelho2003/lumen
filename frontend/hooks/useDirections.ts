@@ -126,7 +126,10 @@ export function useDirections(
       setError(null);
 
       try {
-        async function fetchDirections(coordinates: string, alternatives: boolean) {
+        async function fetchDirections(
+          coordinates: string,
+          alternatives: boolean,
+        ) {
           const params = new URLSearchParams({
             geometries: "geojson",
             steps: "true",
