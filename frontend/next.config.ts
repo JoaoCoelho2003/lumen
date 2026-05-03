@@ -19,6 +19,7 @@ const LUMEN_API =
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  devIndicators: false,
   allowedDevOrigins: [
     "localhost",
     "127.0.0.1",

@@ -5,6 +5,10 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { SessionProvider } from "next-auth/react";
 
+const showQueryDevtools =
+  process.env.NODE_ENV === "development" &&
+  process.env.NEXT_PUBLIC_MODE === "dev";
+
 export default function Providers({
   children,
 }: Readonly<{
@@ -17,7 +21,9 @@ export default function Providers({
       <QueryClientProvider client={queryClient}>
         {children}
 
-        <ReactQueryDevtools initialIsOpen={false} buttonPosition={"top-left"} />
+        {showQueryDevtools ? (
+          <ReactQueryDevtools initialIsOpen={false} buttonPosition="top-left" />
+        ) : null}
       </QueryClientProvider>
     </SessionProvider>
   );

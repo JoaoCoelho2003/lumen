@@ -61,7 +61,7 @@ export function SearchBar({
                 setIsFocused(true);
               }}
               onFocus={handleFocus}
-              placeholder="Para onde?"
+              placeholder="Where to?"
               className="min-w-0 flex-1 bg-transparent text-sm text-foreground outline-none placeholder:text-muted-foreground"
             />
             {destinationLabel && (

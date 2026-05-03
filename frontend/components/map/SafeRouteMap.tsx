@@ -624,7 +624,7 @@ export function SafeRouteMap() {
       </div>
 
       <RightSideDrawer
-        title="Pin Allert"
+        title="Pin Alert"
         description="Alert about pins on the route. Tap to view details."
         triggerLabel="Open quick settings"
         open={pinDrawerOpen}

@@ -42,7 +42,7 @@ export default function RootLayout({
 }>) {
   return (
     <html
-      lang="pt"
+      lang="en"
       className={cn("h-full antialiased dark", "font-sans", notoSans.variable)}
     >
       <head>
