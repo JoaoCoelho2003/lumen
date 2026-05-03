@@ -25,8 +25,8 @@ type MarkerLayerProps = {
 function getSafeSpotStyle(kind: SafeSpot["kind"], selected: boolean) {
   if (kind === "crowd") {
     return selected
-      ? "border-violet-100 bg-violet-600 text-white shadow-violet-600/30"
-      : "border-background/90 bg-card text-violet-600 shadow-violet-600/20";
+      ? "border-cyan-100 bg-primary text-primary-foreground shadow-primary/30"
+      : "border-primary/50 bg-card text-primary shadow-primary/25";
   }
 
   if (kind === "fire") {
@@ -96,13 +96,13 @@ function SafeSpotMarker({
         title={safeSpot.name}
       >
         {safeSpot.kind === "crowd" && safeSpot.crowd_count ? (
-          <span className="mb-1 rounded-full border border-violet-100 bg-violet-600 px-2 py-0.5 text-[11px] font-semibold leading-none text-white shadow-lg shadow-violet-600/25">
+          <span className="mb-1 rounded-full border border-cyan-100 bg-primary px-2 py-0.5 text-[11px] font-semibold leading-none text-primary-foreground shadow-lg shadow-primary/25">
             {safeSpot.crowd_count}
           </span>
         ) : null}
         {safeSpot.kind === "crowd" ? (
           <span
-            className="absolute left-1/2 -translate-x-1/2 translate-y-1/2 rounded-full bg-violet-500/20 ring-1 ring-violet-500/25"
+            className="absolute left-1/2 -translate-x-1/2 translate-y-1/2 rounded-full bg-primary/20 ring-1 ring-primary/30"
             style={{
               bottom: crowdHaloOffset,
               height: crowdHaloSize,
