@@ -347,7 +347,8 @@ export function PinLayer({ pins, visible }: PinLayerProps) {
                   <div
                     className="flex items-center justify-center"
                     style={{
-                      backgroundColor: markerTone("dangerous-area").backgroundColor,
+                      backgroundColor:
+                        markerTone("dangerous-area").backgroundColor,
                       borderColor: markerTone("dangerous-area").borderColor,
                       color: markerTone("dangerous-area").color,
                       borderWidth: 1,
@@ -355,10 +356,7 @@ export function PinLayer({ pins, visible }: PinLayerProps) {
                       height: 30,
                     }}
                   >
-                    <TriangleAlert
-                      className="h-3.5 w-3.5"
-                      strokeWidth={2.2}
-                    />
+                    <TriangleAlert className="h-3.5 w-3.5" strokeWidth={2.2} />
                   </div>
                   <div
                     className="flex items-center justify-center"
@@ -371,10 +369,7 @@ export function PinLayer({ pins, visible }: PinLayerProps) {
                       height: 30,
                     }}
                   >
-                    <LightbulbOff
-                      className="h-3.5 w-3.5"
-                      strokeWidth={2.2}
-                    />
+                    <LightbulbOff className="h-3.5 w-3.5" strokeWidth={2.2} />
                   </div>
                 </div>
               ) : (
@@ -390,15 +385,9 @@ export function PinLayer({ pins, visible }: PinLayerProps) {
                   }}
                 >
                   {c.pin_type === "low-light" ? (
-                    <LightbulbOff
-                      className="h-3.5 w-3.5"
-                      strokeWidth={2.2}
-                    />
+                    <LightbulbOff className="h-3.5 w-3.5" strokeWidth={2.2} />
                   ) : (
-                    <TriangleAlert
-                      className="h-3.5 w-3.5"
-                      strokeWidth={2.2}
-                    />
+                    <TriangleAlert className="h-3.5 w-3.5" strokeWidth={2.2} />
                   )}
                 </div>
               )}

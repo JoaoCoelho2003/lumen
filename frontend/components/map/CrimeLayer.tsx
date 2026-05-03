@@ -11,9 +11,9 @@ import { useCrimeStreets } from "@/app/api/queries/map-data";
 // 19h–22h → 0.65→1.0 (noite, sobe)
 // 22h–24h → 1.0 (pico noturno)
 const CURVE: [number, number][] = [
-  [0,  1.0],
-  [3,  1.0],
-  [6,  0.3],
+  [0, 1.0],
+  [3, 1.0],
+  [6, 0.3],
   [15, 0.3],
   [19, 0.65],
   [22, 1.0],
@@ -32,7 +32,13 @@ export function crimeMultiplier(hour: number): number {
   return 1.0;
 }
 
-export function CrimeLayer({ enabled, hour }: { enabled: boolean; hour: number }) {
+export function CrimeLayer({
+  enabled,
+  hour,
+}: {
+  enabled: boolean;
+  hour: number;
+}) {
   const data = useCrimeStreets(enabled);
 
   if (!enabled) return null;

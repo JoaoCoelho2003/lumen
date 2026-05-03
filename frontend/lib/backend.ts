@@ -25,7 +25,11 @@ export async function fetchBackendJson<T>(
     }
 
     // Surface network/CORS errors with more context and log to console for debugging
-    console.error("fetchBackendJson network error when calling", buildBackendUrl(path), err);
+    console.error(
+      "fetchBackendJson network error when calling",
+      buildBackendUrl(path),
+      err,
+    );
     throw new Error(err instanceof Error ? err.message : String(err));
   }
 

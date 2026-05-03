@@ -46,7 +46,7 @@ function normalizeBearing(bearing: number) {
 }
 
 function getBearingDelta(first: number, second: number) {
-  return Math.abs((((first - second + 180) % 360) + 360) % 360 - 180);
+  return Math.abs(((((first - second + 180) % 360) + 360) % 360) - 180);
 }
 
 function getCompassBearing(event: DeviceOrientationEventWithCompass) {
@@ -62,10 +62,9 @@ function getCompassBearing(event: DeviceOrientationEventWithCompass) {
 }
 
 async function requestCompassPermission() {
-  const DeviceOrientation =
-    window.DeviceOrientationEvent as
-      | DeviceOrientationEventConstructorWithPermission
-      | undefined;
+  const DeviceOrientation = window.DeviceOrientationEvent as
+    | DeviceOrientationEventConstructorWithPermission
+    | undefined;
 
   if (DeviceOrientation?.requestPermission) {
     try {
@@ -207,7 +206,10 @@ export function useNavigation(
       });
     };
 
-    window.addEventListener("deviceorientationabsolute", handleDeviceOrientation);
+    window.addEventListener(
+      "deviceorientationabsolute",
+      handleDeviceOrientation,
+    );
     window.addEventListener("deviceorientation", handleDeviceOrientation);
     removeCompassListenerRef.current = () => {
       window.removeEventListener(
@@ -305,8 +307,7 @@ export function useNavigation(
                 movementBearing ??
                 routeBearing)
               : (movementBearing ?? gpsBearing ?? routeBearing);
-          const cameraBearing =
-            profile === "walking" ? routeBearing : bearing;
+          const cameraBearing = profile === "walking" ? routeBearing : bearing;
           const closestStepIndex = findClosestStepIndex(
             route.steps,
             nextCoordinates,

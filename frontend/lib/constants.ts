@@ -1,7 +1,8 @@
 import type { LngLatBoundsLike } from "mapbox-gl";
 
 export const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
-export const API_URL = process.env.NEXT_PUBLIC_LUMEN_API_URL ?? "http://localhost:8000";
+export const API_URL =
+  process.env.NEXT_PUBLIC_LUMEN_API_URL ?? "http://localhost:8000";
 
 export const DANGER_CLUSTER_RADIUS_KM = 0.035;
 

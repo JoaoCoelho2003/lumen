@@ -45,7 +45,9 @@ function useViewportQuery(
   queryFn: (bounds: ViewportBounds) => Promise<FeatureCollection>,
 ) {
   const { current: map } = useMap();
-  const [requestBounds, setRequestBounds] = useState<ViewportBounds | null>(null);
+  const [requestBounds, setRequestBounds] = useState<ViewportBounds | null>(
+    null,
+  );
   const timer = useRef<number | null>(null);
 
   useEffect(() => {
