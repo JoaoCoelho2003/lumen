@@ -26,6 +26,7 @@ type RightSideDrawerProps = {
   hasBlur?: boolean;
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
+  dataTutorial?: string;
 };
 
 export function RightSideDrawer({
@@ -39,6 +40,7 @@ export function RightSideDrawer({
   hasBlur = false,
   open,
   onOpenChange,
+  dataTutorial,
 }: RightSideDrawerProps) {
   const [drawerOffset, setDrawerOffset] = React.useState(16);
 
@@ -82,6 +84,7 @@ export function RightSideDrawer({
         <DrawerTrigger asChild>
           <Button
             size="icon-lg"
+            data-tutorial={dataTutorial}
             className={cn(
               "pointer-events-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-border bg-card text-primary shadow-2xl transition-all duration-300 ease-out hover:bg-muted",
               hasBlur && "backdrop-blur-md",

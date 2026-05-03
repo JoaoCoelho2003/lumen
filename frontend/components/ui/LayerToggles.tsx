@@ -66,6 +66,7 @@ export function LayerToggles({
       <DropdownMenuTrigger asChild>
         <button
           type="button"
+          data-tutorial="layers"
           className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-border/60 bg-card/95 text-foreground shadow-2xl backdrop-blur-md transition-all duration-300 ease-out hover:bg-muted/40"
           aria-label="Open layer options"
           title="Layers"

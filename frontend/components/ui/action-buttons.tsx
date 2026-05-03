@@ -42,7 +42,7 @@ export function ActionButtons({
   }
 
   return (
-    <div className="mt-auto w-full pb-3">
+    <div data-tutorial="action-buttons" className="mt-auto w-full pb-3">
       <div className="grid grid-cols-[1fr_auto] gap-3">
         <AlertDialog>
           <AlertDialogTrigger asChild>

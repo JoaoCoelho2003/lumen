@@ -129,7 +129,7 @@ function SettingsPanel({
   onSaveWeights,
 }: SettingsPanelProps) {
   return (
-    <div className="space-y-4 px-1 py-1 text-sm text-muted-foreground">
+    <div data-tutorial="settings" className="space-y-4 px-1 py-1 text-sm text-muted-foreground">
       {isWeightsLoading ? (
         <div className="rounded-xl border border-border/60 bg-background/40 px-3 py-3 text-xs">
           Loading saved weights...
@@ -546,16 +546,18 @@ export function MapBottomDrawer({
                   : "flex min-h-0 flex-1 flex-col gap-6"
               }
             >
-              <SearchBar
-                destinationLabel={destinationLabel}
-                error={state === "idle" ? error : null}
-                proximity={searchProximity}
-                suggestionsPlacement="below"
-                onFocus={handleSearchFocus}
-                onDestinationLabelChange={onDestinationLabelChange}
-                onDestinationSelect={handleDestinationSelect}
-                onDestinationCoordinatesChange={onDestinationCoordinatesChange}
-              />
+              <div data-tutorial="search">
+                <SearchBar
+                  destinationLabel={destinationLabel}
+                  error={state === "idle" ? error : null}
+                  proximity={searchProximity}
+                  suggestionsPlacement="below"
+                  onFocus={handleSearchFocus}
+                  onDestinationLabelChange={onDestinationLabelChange}
+                  onDestinationSelect={handleDestinationSelect}
+                  onDestinationCoordinatesChange={onDestinationCoordinatesChange}
+                />
+              </div>
 
               {state !== "preview" && (
                 <div className="min-h-0 flex-1 overflow-y-auto pr-1">

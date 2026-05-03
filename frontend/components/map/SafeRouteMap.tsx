@@ -45,6 +45,7 @@ import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
 import { PinTags } from "@/components/ui/PinTags";
 import { RightSideDrawer } from "@/components/ui/RightSideDrawer";
 import { useSafeSpots } from "@/app/api/queries/safe-spots";
+import { OnboardingTutorial } from "@/components/ui/OnboardingTutorial";
 import { UserMenu } from "@/components/ui/UserMenu";
 import { useRouteWeights } from "@/hooks/useRouteWeights";
 
@@ -547,6 +548,8 @@ export function SafeRouteMap() {
 
   return (
     <main className="relative h-dvh w-full overflow-hidden bg-background text-foreground">
+      <OnboardingTutorial />
+
       {locationError && (
         <div className="pointer-events-none p-3 fixed inset-x-4 top-4 z-40 rounded-xl border border-destructive/40 bg-destructive/15 text-xs text-destructive shadow-2xl backdrop-blur-md">
           {locationError}
@@ -601,6 +604,7 @@ export function SafeRouteMap() {
       <div className="flex flex-col gap-2 fixed z-10 left-3 top-1/4">
         <button
           type="button"
+          data-tutorial="recenter"
           onClick={recenterOnUser}
           className={`pointer-events-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-border/60 bg-card/95 text-primary shadow-2xl backdrop-blur-md transition-all duration-300 ease-out hover:bg-muted/40 ${isFocusedOnUser ? "opacity-0" : "opacity-100"}`}
           aria-label="Recenter on my location"
@@ -627,6 +631,7 @@ export function SafeRouteMap() {
         title="Pin Allert"
         description="Alert about pins on the route. Tap to view details."
         triggerLabel="Open quick settings"
+        dataTutorial="pin-drawer"
         open={pinDrawerOpen}
         onOpenChange={setPinDrawerOpen}
         inlineStatus={
