@@ -85,7 +85,7 @@ export function LayerToggles({
         >
           <DropdownMenuRadioItem
             value="none"
-            className="flex h-11 w-11 items-center justify-center rounded-xl p-3 text-muted-foreground transition-all duration-300 ease-out data-[state=checked]:bg-muted/60 data-[state=checked]:text-foreground hover:bg-muted/50 hover:text-foreground focus:bg-muted/60 focus:text-foreground [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-xl p-3 text-muted-foreground transition-all duration-300 ease-out data-[state=checked]:bg-primary data-[state=checked]:text-foreground hover:bg-muted/50 hover:text-foreground focus:bg-muted/60 focus:text-foreground [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
             title="None"
           >
             <CircleOff className="h-5 w-5" />
@@ -101,7 +101,7 @@ export function LayerToggles({
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
             value="heatmap"
-            className="flex h-11 w-11 items-center justify-center rounded-xl p-3 text-muted-foreground transition-all duration-300 ease-out data-[state=checked]:bg-muted/60 data-[state=checked]:text-foreground hover:bg-muted/50 hover:text-foreground focus:bg-muted/60 focus:text-foreground [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-xl p-3 text-muted-foreground transition-all duration-300 ease-out data-[state=checked]:bg-primary data-[state=checked]:text-foreground hover:bg-muted/50 hover:text-foreground focus:bg-muted/60 focus:text-foreground [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
             title="Heatmap"
           >
             <TriangleAlert className="h-5 w-5" />
@@ -109,7 +109,7 @@ export function LayerToggles({
           </DropdownMenuRadioItem>
           <DropdownMenuRadioItem
             value="lighting"
-            className="flex h-11 w-11 items-center justify-center rounded-xl p-3 text-muted-foreground transition-all duration-300 ease-out data-[state=checked]:bg-muted/60 data-[state=checked]:text-foreground hover:bg-muted/50 hover:text-foreground focus:bg-muted/60 focus:text-foreground [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
+            className="flex h-11 w-11 items-center justify-center rounded-xl p-3 text-muted-foreground transition-all duration-300 ease-out data-[state=checked]:bg-primary data-[state=checked]:text-foreground hover:bg-muted/50 hover:text-foreground focus:bg-muted/60 focus:text-foreground [&_[data-slot=dropdown-menu-radio-item-indicator]]:hidden"
             title="Lighting"
           >
             <Lightbulb className="h-5 w-5" />
