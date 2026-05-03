@@ -323,7 +323,6 @@ function RoutePanel({
           })}
         </div>
       ) : null}
-
     </div>
   );
 }
@@ -352,7 +351,8 @@ function DirectionsPanel({ route, activeStepIndex }: DirectionsPanelProps) {
                 {step.instruction}
               </p>
               <p className="text-xs text-muted-foreground">
-                {formatDistance(step.distance)} · {formatDuration(step.duration)}
+                {formatDistance(step.distance)} ·{" "}
+                {formatDuration(step.duration)}
               </p>
             </div>
           </div>

@@ -39,12 +39,17 @@ function getSafeSpotAddress(feature: {
 }
 
 function getOverpassSafeSpotKind(tags: Record<string, string>): SafeSpotKind {
-  if (tags.amenity === "fire_station" || tags.emergency === "fire_station") return "fire";
-  if (tags.amenity === "hospital" || tags.healthcare === "hospital") return "hospital";
+  if (tags.amenity === "fire_station" || tags.emergency === "fire_station")
+    return "fire";
+  if (tags.amenity === "hospital" || tags.healthcare === "hospital")
+    return "hospital";
   return "police";
 }
 
-function getOverpassSafeSpotName(tags: Record<string, string>, kind: SafeSpotKind) {
+function getOverpassSafeSpotName(
+  tags: Record<string, string>,
+  kind: SafeSpotKind,
+) {
   if (tags.name) return tags.name;
   if (kind === "fire") return "Fire station";
   if (kind === "hospital") return "Hospital";
@@ -90,7 +95,8 @@ async function fetchMapboxSafeSpots(origin: Coordinates): Promise<SafeSpot[]> {
         );
         const data = (await response.json()) as MapboxGeocodingResponse;
 
-        if (!response.ok) throw new Error(data.message ?? "Could not find Mapbox safe spots.");
+        if (!response.ok)
+          throw new Error(data.message ?? "Could not find Mapbox safe spots.");
 
         return (
           data.features?.map<SafeSpot>((feature) => ({
@@ -107,11 +113,15 @@ async function fetchMapboxSafeSpots(origin: Coordinates): Promise<SafeSpot[]> {
 
     return results.flat();
   } catch {
-    throw new Error("Failed to fetch Mapbox safe spots. Please try again later.");
+    throw new Error(
+      "Failed to fetch Mapbox safe spots. Please try again later.",
+    );
   }
 }
 
-async function fetchOverpassSafeSpots(origin: Coordinates): Promise<SafeSpot[]> {
+async function fetchOverpassSafeSpots(
+  origin: Coordinates,
+): Promise<SafeSpot[]> {
   try {
     const [longitude, latitude] = origin;
     const radiusMeters = 25_000;
@@ -137,10 +147,13 @@ async function fetchOverpassSafeSpots(origin: Coordinates): Promise<SafeSpot[]> 
       out center tags 40;
     `;
     const params = new URLSearchParams({ data: query });
-    const response = await fetch(`https://overpass-api.de/api/interpreter?${params.toString()}`);
+    const response = await fetch(
+      `https://overpass-api.de/api/interpreter?${params.toString()}`,
+    );
     const data = (await response.json()) as OverpassResponse;
 
-    if (!response.ok) throw new Error("Could not find OpenStreetMap safe spots.");
+    if (!response.ok)
+      throw new Error("Could not find OpenStreetMap safe spots.");
 
     return (
       data.elements
@@ -149,7 +162,8 @@ async function fetchOverpassSafeSpots(origin: Coordinates): Promise<SafeSpot[]> 
           const elementLatitude = element.lat ?? element.center?.lat;
           const elementLongitude = element.lon ?? element.center?.lon;
 
-          if (elementLatitude === undefined || elementLongitude === undefined) return null;
+          if (elementLatitude === undefined || elementLongitude === undefined)
+            return null;
 
           const coordinates: Coordinates = [elementLongitude, elementLatitude];
           const kind = getOverpassSafeSpotKind(tags);
@@ -166,7 +180,9 @@ async function fetchOverpassSafeSpots(origin: Coordinates): Promise<SafeSpot[]> 
         .filter((spot): spot is SafeSpot => spot !== null) ?? []
     );
   } catch {
-    throw new Error("Failed to fetch OpenStreetMap safe spots. Please try again later.");
+    throw new Error(
+      "Failed to fetch OpenStreetMap safe spots. Please try again later.",
+    );
   }
 }
 
@@ -177,10 +193,15 @@ export async function fetchSafeSpots(origin: Coordinates): Promise<SafeSpot[]> {
       fetchOverpassSafeSpots(origin).catch(() => []),
     ]);
 
-    const spots = dedupeSafeSpots([...overpassSpots, ...mapboxSpots]).slice(0, 20);
+    const spots = dedupeSafeSpots([...overpassSpots, ...mapboxSpots]).slice(
+      0,
+      20,
+    );
 
     if (spots.length === 0) {
-      throw new Error("No police stations, fire stations, or hospitals were found nearby.");
+      throw new Error(
+        "No police stations, fire stations, or hospitals were found nearby.",
+      );
     }
 
     return spots;

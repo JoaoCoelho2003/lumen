@@ -2,10 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MAPBOX_TOKEN } from "@/lib/constants";
-import type {
-  Coordinates,
-  GeocodingResult,
-} from "@/lib/types";
+import type { Coordinates, GeocodingResult } from "@/lib/types";
 
 type GeocodingState = {
   suggestions: GeocodingResult[];
@@ -69,11 +66,7 @@ function searchBoxFeatureToResult(feature: SearchBoxFeature) {
     feature.geometry?.coordinates?.[1];
   const name = feature.properties?.name;
 
-  if (
-    typeof longitude !== "number" ||
-    typeof latitude !== "number" ||
-    !name
-  ) {
+  if (typeof longitude !== "number" || typeof latitude !== "number" || !name) {
     return null;
   }
 

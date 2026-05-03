@@ -44,7 +44,9 @@ export function useCreatePinMutation() {
       queryClient.setQueryData<Pin[]>(["pins"], (prev = []) => {
         const withoutOptimistic = prev.filter((p) => !p.id.startsWith("temp-"));
         const alreadyPresent = withoutOptimistic.some((p) => p.id === saved.id);
-        return alreadyPresent ? withoutOptimistic : [...withoutOptimistic, saved];
+        return alreadyPresent
+          ? withoutOptimistic
+          : [...withoutOptimistic, saved];
       });
     },
 

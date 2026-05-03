@@ -13,29 +13,29 @@ const withPWA = withPWAInit({
 });
 
 const LUMEN_API =
-    process.env.LUMEN_BACKEND_URL ??
-    process.env.NEXT_PUBLIC_LUMEN_API_URL ??
-    "http://localhost:8000";
+  process.env.LUMEN_BACKEND_URL ??
+  process.env.NEXT_PUBLIC_LUMEN_API_URL ??
+  "http://localhost:8000";
 
 const nextConfig: NextConfig = {
-    turbopack: {},
-    allowedDevOrigins: [
-        "localhost",
-        "127.0.0.1",
-        "10.209.233.116",
-        "jayleen-hydrometrical-uncavalierly.ngrok-free.dev",
-        "unsturdy-margarett-promising.ngrok-free.dev",
-        "uincz-161-230-56-29.run.pinggy-free.link",
-        "3fea-148-69-201-206.ngrok-free.app"
-    ],
-    async rewrites() {
-        return [
-            {
-                source: "/lumen-api/:path*",
-                destination: `${LUMEN_API}/:path*`,
-            },
-        ];
-    },
+  turbopack: {},
+  allowedDevOrigins: [
+    "localhost",
+    "127.0.0.1",
+    "10.209.233.116",
+    "jayleen-hydrometrical-uncavalierly.ngrok-free.dev",
+    "unsturdy-margarett-promising.ngrok-free.dev",
+    "uincz-161-230-56-29.run.pinggy-free.link",
+    "c4e3-148-69-203-8.ngrok-free.app",
+  ],
+  async rewrites() {
+    return [
+      {
+        source: "/lumen-api/:path*",
+        destination: `${LUMEN_API}/:path*`,
+      },
+    ];
+  },
 };
 
 export default withPWA(nextConfig);

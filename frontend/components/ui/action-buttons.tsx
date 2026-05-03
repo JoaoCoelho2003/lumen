@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  Loader2,
-  PhoneCall,
-  Route as RouteIcon,
-  Siren,
-  X,
-  Zap,
-} from "lucide-react";
+import { Loader2, PhoneCall, Route as RouteIcon, Siren, X } from "lucide-react";
 import { useState } from "react";
 import {
   AlertDialog,
@@ -74,8 +67,8 @@ export function ActionButtons({
               </AlertDialogMedia>
               <AlertDialogTitle>Start safety routing?</AlertDialogTitle>
               <AlertDialogDescription>
-                We will find the closest safe spot near you and start
-                navigation there.
+                We will find the closest safe spot near you and start navigation
+                there.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -109,8 +102,8 @@ export function ActionButtons({
               </AlertDialogMedia>
               <AlertDialogTitle>Send an SOS alert?</AlertDialogTitle>
               <AlertDialogDescription>
-                This is where the emergency alert API will be used. Continue to
-                simulate the action.
+                Sending an SOS will immediately alert emergency services and
+                notify your emergency contacts with your live location.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -159,8 +152,8 @@ export function ActionButtons({
 
             <div className="mt-10 flex flex-col items-center text-center">
               <div className="relative flex h-32 w-32 items-center justify-center">
-                <div className="absolute h-52 w-52 rounded-full border border-destructive/10" />
-                <div className="absolute h-40 w-40 rounded-full border border-destructive/15" />
+                <div className="absolute h-52 w-52 rounded-full border border-destructive/10 animate-ping" />
+                <div className="absolute h-40 w-40 rounded-full border border-destructive/15 animate-ping" />
                 <div className="flex h-28 w-28 items-center justify-center rounded-full bg-destructive text-destructive-foreground shadow-2xl">
                   <Siren className="h-10 w-10" />
                 </div>
@@ -171,59 +164,57 @@ export function ActionButtons({
             </div>
 
             <div className="mt-8 space-y-4">
-              <Button
-                type="button"
-                variant="destructive"
-                className="h-16 w-full justify-start gap-4 rounded-xl px-5"
+              {/* Call button */}
+              <a
+                href="tel:112"
+                className="flex w-full items-center gap-4 rounded-xl bg-destructive px-5 py-3.5 transition-opacity active:opacity-80"
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/30">
-                  <PhoneCall className="h-6 w-6" />
+                <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-white/15">
+                  <PhoneCall className="h-6 w-6 text-white" />
                 </span>
-                <span className="text-left">
-                  <span className="block text-sm font-semibold">
-                    Call Authorities
+                <span className="flex-1 text-left">
+                  <span className="block text-sm font-semibold text-white">
+                    Call Emergency Services
                   </span>
-                  <span className="block text-xs text-destructive-foreground/80">
-                    Instantly dial emergency services
+                  <span className="block text-xs text-white/70">
+                    Dial 112 · operator alerted
                   </span>
                 </span>
-              </Button>
+                <span className="border-l border-white/20 pl-4 text-right">
+                  <span className="block text-xl font-semibold leading-none text-white">
+                    112
+                  </span>
+                  <span className="mt-0.5 block text-[10px] uppercase tracking-wide text-white/60">
+                    Tap to call
+                  </span>
+                </span>
+              </a>
 
+              {/* Live location — always on */}
               <div className="rounded-xl border border-destructive/15 bg-destructive/5 px-5 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-                      <RouteIcon className="h-6 w-6" />
-                    </span>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        Share Live Location
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Send GPS to contacts + authorities
-                      </p>
-                    </div>
+                <div className="flex items-center gap-4">
+                  <span className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
+                    <RouteIcon className="h-6 w-6" />
+                  </span>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-foreground">
+                      Live Location Sharing
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      Streaming GPS to contacts + authorities
+                    </p>
                   </div>
-                  <span className="h-6 w-6 rounded-full border border-destructive/20 bg-background" />
-                </div>
-              </div>
-
-              <div className="rounded-xl border border-destructive/15 bg-destructive/5 px-5 py-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-destructive/10 text-destructive">
-                      <Zap className="h-6 w-6" />
+                  <div className="flex flex-col items-end gap-0.5">
+                    <span className="flex items-center gap-1.5">
+                      <span className="h-1.5 w-1.5 rounded-full bg-green-500" />
+                      <span className="text-[11px] font-semibold text-green-600 dark:text-green-400">
+                        Active
+                      </span>
                     </span>
-                    <div>
-                      <p className="text-sm font-semibold text-foreground">
-                        Flashlight / Strobe
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Activate strobe beacon
-                      </p>
-                    </div>
+                    <span className="text-[10px] text-muted-foreground">
+                      2 recipients
+                    </span>
                   </div>
-                  <span className="h-6 w-6 rounded-full border border-destructive/20 bg-background" />
                 </div>
               </div>
             </div>
