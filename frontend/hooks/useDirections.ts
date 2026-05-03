@@ -63,7 +63,9 @@ export function useDirections(
 ): DirectionsState {
   const [route, setRoute] = useState<Route | null>(null);
   const [rankedRoutes, setRankedRoutes] = useState<RankedRoute[]>([]);
-  const [selectedRouteIndex, setSelectedRouteIndex] = useState<number | null>(null);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState<number | null>(
+    null,
+  );
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [mapboxRoutes, setMapboxRoutes] = useState<MapboxDirectionsRoute[]>([]);
@@ -215,7 +217,9 @@ export function useDirections(
     }
 
     const nextSelectedIndex =
-      ranked.best_route_index ?? ranked.ranked_routes[0]?.source_route_index ?? 0;
+      ranked.best_route_index ??
+      ranked.ranked_routes[0]?.source_route_index ??
+      0;
 
     const syncRankedRoute = window.setTimeout(() => {
       setRankedRoutes(ranked.ranked_routes.slice(0, 10));

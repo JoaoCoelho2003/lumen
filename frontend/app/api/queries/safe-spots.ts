@@ -16,7 +16,11 @@ export function useSafeSpots(): SafeSpotsState {
   const queryClient = useQueryClient();
   const [origin, setOrigin] = useState<Coordinates | null>(null);
 
-  const { data: safeSpots = [], isFetching, error } = useQuery({
+  const {
+    data: safeSpots = [],
+    isFetching,
+    error,
+  } = useQuery({
     queryKey: ["safe-spots", origin],
     queryFn: () => fetchSafeSpots(origin!),
     enabled: !!origin,

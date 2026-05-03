@@ -1,6 +1,9 @@
 import { api } from "./api";
 
-export type FeatureCollection = { type: "FeatureCollection"; features: unknown[] };
+export type FeatureCollection = {
+  type: "FeatureCollection";
+  features: unknown[];
+};
 
 export type ViewportBounds = {
   west: number;
