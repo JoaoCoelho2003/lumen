@@ -60,6 +60,9 @@ type MapBottomDrawerProps = {
   isWeightsSaving: boolean;
   weightsError: string | null;
   hasPendingWeightChanges: boolean;
+  crowdPresenceEnabled: boolean;
+  isSharingCrowdPresence: boolean;
+  isDaytime: boolean;
   distanceRemaining: number;
   durationRemaining: number;
   activeStepIndex: number;
@@ -77,6 +80,7 @@ type MapBottomDrawerProps = {
   isSafetyRouteLoading: boolean;
   safeSpotsEnabled: boolean;
   onSafeSpotsEnabledChange: (enabled: boolean) => void;
+  onCrowdPresenceEnabledChange: (enabled: boolean) => void;
 };
 
 function ManeuverIcon({ type }: { type: string }) {
@@ -98,7 +102,11 @@ type SettingsPanelProps = {
   weightsError: string | null;
   hasPendingWeightChanges: boolean;
   safeSpotsEnabled: boolean;
+  crowdPresenceEnabled: boolean;
+  isSharingCrowdPresence: boolean;
+  isDaytime: boolean;
   onSafeSpotsEnabledChange: (enabled: boolean) => void;
+  onCrowdPresenceEnabledChange: (enabled: boolean) => void;
   onLightWeightChange: (value: number) => void;
   onCrimeWeightChange: (value: number) => void;
   onSaveWeights: () => Promise<void>;
@@ -111,7 +119,11 @@ function SettingsPanel({
   weightsError,
   hasPendingWeightChanges,
   safeSpotsEnabled,
+  crowdPresenceEnabled,
+  isSharingCrowdPresence,
+  isDaytime,
   onSafeSpotsEnabledChange,
+  onCrowdPresenceEnabledChange,
   onLightWeightChange,
   onCrimeWeightChange,
   onSaveWeights,
@@ -147,11 +159,43 @@ function SettingsPanel({
       </div>
 
       <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium text-foreground">
+              Crowd safety sharing
+            </p>
+            <p className="text-xs text-muted-foreground">
+              Share anonymous presence to create crowd safe spots
+            </p>
+            {isSharingCrowdPresence ? (
+              <p className="mt-1 text-xs text-primary">
+                Sharing active location
+              </p>
+            ) : null}
+          </div>
+          <Switch
+            checked={crowdPresenceEnabled}
+            onCheckedChange={onCrowdPresenceEnabledChange}
+            aria-label="Toggle crowd safety sharing"
+          />
+        </div>
+      </div>
+
+      <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-foreground">Light weight</p>
+            <p className="text-sm font-medium text-foreground">
+              Light weight
+              {isDaytime ? (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  Night only
+                </span>
+              ) : null}
+            </p>
             <p className="text-xs text-muted-foreground">
-              Influence for low-light segments
+              {isDaytime
+                ? "Daylight is active, so street lighting is not used for scoring"
+                : "Influence for low-light segments"}
             </p>
           </div>
           <span className="text-xs font-semibold text-foreground">
@@ -163,6 +207,7 @@ function SettingsPanel({
             value={[weights.light_weight * 100]}
             min={0}
             max={100}
+            disabled={isDaytime}
             onValueChange={([value]) => onLightWeightChange(value / 100)}
           />
         </div>
@@ -202,6 +247,14 @@ function SettingsPanel({
       </div>
     </div>
   );
+}
+
+function formatRouteNote(note: string) {
+  if (note.toLowerCase().includes("daytime detected")) {
+    return "Daylight mode: street lighting is not used while ranking this route.";
+  }
+
+  return note;
 }
 
 type RoutePanelProps = {
@@ -265,9 +318,9 @@ function RoutePanel({
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">Crime reports</p>
+              <p className="text-muted-foreground">Red streets</p>
               <p className="font-semibold text-foreground">
-                {selectedCandidate.crime_points_near_route}
+                {selectedCandidate.high_crime_segments_near_route}
               </p>
             </div>
             <div>
@@ -279,7 +332,7 @@ function RoutePanel({
           </div>
           {selectedCandidate.notes[0] ? (
             <p className="mt-3 rounded-md bg-background/50 px-2 py-2 text-xs text-muted-foreground">
-              {selectedCandidate.notes[0]}
+              {formatRouteNote(selectedCandidate.notes[0])}
             </p>
           ) : null}
         </div>
@@ -290,7 +343,7 @@ function RoutePanel({
           <p className="px-1 text-xs font-semibold uppercase text-muted-foreground">
             Alternatives
           </p>
-          {rankedRoutes.slice(0, 5).map((candidate, index) => {
+          {rankedRoutes.slice(0, 3).map((candidate, index) => {
             const sourceIndex = candidate.source_route_index ?? index;
             const isSelected = selectedRouteIndex === sourceIndex;
 
@@ -312,7 +365,7 @@ function RoutePanel({
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {candidate.distance_km.toFixed(1)} km ·{" "}
                     {formatPercent(candidate.coverage)} lighting ·{" "}
-                    {candidate.crime_points_near_route} reports
+                    {candidate.high_crime_segments_near_route} red streets
                   </p>
                 </div>
                 <span className="shrink-0 text-sm font-semibold text-primary">
@@ -382,6 +435,9 @@ export function MapBottomDrawer({
   isWeightsSaving,
   weightsError,
   hasPendingWeightChanges,
+  crowdPresenceEnabled,
+  isSharingCrowdPresence,
+  isDaytime,
   distanceRemaining,
   durationRemaining,
   activeStepIndex,
@@ -399,6 +455,7 @@ export function MapBottomDrawer({
   isSafetyRouteLoading,
   safeSpotsEnabled,
   onSafeSpotsEnabledChange,
+  onCrowdPresenceEnabledChange,
 }: MapBottomDrawerProps) {
   const showSearch = state !== "navigating";
   const [openSnapPoint, setOpenSnapPoint] =
@@ -509,7 +566,11 @@ export function MapBottomDrawer({
                     weightsError={weightsError}
                     hasPendingWeightChanges={hasPendingWeightChanges}
                     safeSpotsEnabled={safeSpotsEnabled}
+                    crowdPresenceEnabled={crowdPresenceEnabled}
+                    isSharingCrowdPresence={isSharingCrowdPresence}
+                    isDaytime={isDaytime}
                     onSafeSpotsEnabledChange={onSafeSpotsEnabledChange}
+                    onCrowdPresenceEnabledChange={onCrowdPresenceEnabledChange}
                     onLightWeightChange={onLightWeightChange}
                     onCrimeWeightChange={onCrimeWeightChange}
                     onSaveWeights={onSaveWeights}

@@ -13,9 +13,12 @@ export default function InstallPrompt() {
     if (isInstallable) {
       const t = setTimeout(() => setVisible(true), 1200);
       return () => clearTimeout(t);
-    } else {
-      setVisible(false);
     }
+
+    const t = setTimeout(() => {
+      setVisible(false);
+    }, 0);
+    return () => clearTimeout(t);
   }, [isInstallable]);
 
   const handleDismiss = () => {
@@ -338,7 +341,7 @@ export default function InstallPrompt() {
                   <strong style={{ color: "rgba(240,237,246,0.8)" }}>
                     Share
                   </strong>{" "}
-                  button in Safari's toolbar
+                  button in Safari&apos;s toolbar
                 </span>
               </div>
               <div className="lumen-ios-step">

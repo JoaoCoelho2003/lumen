@@ -12,7 +12,7 @@ export type GeocodingResult = {
   }>;
 };
 
-export type SafeSpotKind = "police" | "fire" | "hospital";
+export type SafeSpotKind = "police" | "fire" | "hospital" | "crowd";
 
 export type SafeSpot = {
   id: string;
@@ -21,6 +21,7 @@ export type SafeSpot = {
   coordinates: Coordinates;
   kind: SafeSpotKind;
   distance: number;
+  crowd_count?: number;
 };
 
 export type RouteStep = {
@@ -62,6 +63,8 @@ export type RankedRoute = {
   longest_dark_run_ratio: number;
   light_points_near_route: number;
   crime_points_near_route: number;
+  high_crime_segments_near_route: number;
+  high_crime_overlap_m: number;
   light_density_per_km: number;
   crime_density_per_km: number;
   distance_km: number;

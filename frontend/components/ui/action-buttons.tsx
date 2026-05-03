@@ -67,7 +67,7 @@ export function ActionButtons({
               </AlertDialogMedia>
               <AlertDialogTitle>Start safety routing?</AlertDialogTitle>
               <AlertDialogDescription>
-                We will find the closest safe spot near you and start navigation
+                We will find the closest safe spot near you and show the route
                 there.
               </AlertDialogDescription>
             </AlertDialogHeader>
@@ -79,7 +79,7 @@ export function ActionButtons({
                 className="bg-success text-success-foreground rounded-lg hover:bg-success/80"
                 onClick={onSafetyRoute}
               >
-                Start route
+                Show route
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>

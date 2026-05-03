@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from backend.api.auth import router as auth_router
+from backend.api.crowds import router as crowds_router
 from backend.api.health import router as health_router
 from backend.api.map_data import router as map_data_router
 from backend.api.pins import router as pins_router
@@ -35,3 +36,4 @@ app.include_router(auth_router)
 app.include_router(routes_router)
 app.include_router(pins_router)
 app.include_router(map_data_router)
+app.include_router(crowds_router)

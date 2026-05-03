@@ -37,26 +37,28 @@ export function useInstallPrompt(): UseInstallPromptReturn {
       ("standalone" in window.navigator &&
         (window.navigator as { standalone?: boolean }).standalone === true);
 
-    if (isStandalone) {
-      setIsInstalled(true);
-      return;
-    }
-
-    // Detect iOS
-    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    setIsIOS(ios);
-
-    // Check if dismissed recently
-    const dismissedAt = localStorage.getItem(DISMISS_KEY);
-    if (dismissedAt) {
-      const expiry = new Date(dismissedAt);
-      expiry.setDate(expiry.getDate() + DISMISS_EXPIRY_DAYS);
-      if (new Date() < expiry) {
-        setIsDismissed(true);
-      } else {
-        localStorage.removeItem(DISMISS_KEY);
+    const syncPromptState = window.setTimeout(() => {
+      if (isStandalone) {
+        setIsInstalled(true);
+        return;
       }
-    }
+
+      // Detect iOS
+      const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      setIsIOS(ios);
+
+      // Check if dismissed recently
+      const dismissedAt = localStorage.getItem(DISMISS_KEY);
+      if (dismissedAt) {
+        const expiry = new Date(dismissedAt);
+        expiry.setDate(expiry.getDate() + DISMISS_EXPIRY_DAYS);
+        if (new Date() < expiry) {
+          setIsDismissed(true);
+        } else {
+          localStorage.removeItem(DISMISS_KEY);
+        }
+      }
+    }, 0);
 
     // Listen for Chrome/Android install prompt
     const handler = (e: Event) => {
@@ -73,6 +75,7 @@ export function useInstallPrompt(): UseInstallPromptReturn {
     });
 
     return () => {
+      window.clearTimeout(syncPromptState);
       window.removeEventListener("beforeinstallprompt", handler);
     };
   }, []);

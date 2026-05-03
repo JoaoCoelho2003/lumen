@@ -26,6 +26,7 @@ const nextConfig: NextConfig = {
     "jayleen-hydrometrical-uncavalierly.ngrok-free.dev",
     "unsturdy-margarett-promising.ngrok-free.dev",
     "uincz-161-230-56-29.run.pinggy-free.link",
+    "3fea-148-69-201-206.ngrok-free.app",
     "c4e3-148-69-203-8.ngrok-free.app",
   ],
   async rewrites() {

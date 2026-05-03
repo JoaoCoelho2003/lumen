@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Float, Integer, String, DateTime, Float
+from sqlalchemy import Column, Float, Integer, String, DateTime
 from sqlalchemy.sql import func
 from backend.core.database import Base
 
@@ -31,3 +31,14 @@ class Pin(Base):
     pin_type = Column(String, nullable=False)
     user_id = Column(String, nullable=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+
+class CrowdPresence(Base):
+    __tablename__ = "crowd_presence"
+
+    id = Column(Integer, primary_key=True, index=True)
+    client_id = Column(String, unique=True, index=True, nullable=False)
+    latitude = Column(Float, nullable=False)
+    longitude = Column(Float, nullable=False)
+    accuracy_m = Column(Float, nullable=True)
+    updated_at = Column(DateTime(timezone=True), server_default=func.now(), index=True)
