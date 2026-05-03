@@ -60,6 +60,7 @@ export function useDirections(
   destination: Coordinates | null,
   profile: TravelProfile,
   weights: RouteWeights,
+  preferFastestRoute = false,
 ): DirectionsState {
   const [route, setRoute] = useState<Route | null>(null);
   const [rankedRoutes, setRankedRoutes] = useState<RankedRoute[]>([]);
@@ -71,7 +72,7 @@ export function useDirections(
   const [mapboxRoutes, setMapboxRoutes] = useState<MapboxDirectionsRoute[]>([]);
   const rankRequest = useMemo(
     () =>
-      mapboxRoutes.length > 0
+      mapboxRoutes.length > 0 && !preferFastestRoute
         ? {
             routes: mapboxRoutes,
             light_weight: weights.light_weight,
@@ -79,7 +80,12 @@ export function useDirections(
             sample_spacing_m: 50,
           }
         : null,
-    [mapboxRoutes, weights.crime_weight, weights.light_weight],
+    [
+      mapboxRoutes,
+      preferFastestRoute,
+      weights.crime_weight,
+      weights.light_weight,
+    ],
   );
   const rankQuery = useRankMapboxRoutes(rankRequest);
 
@@ -212,7 +218,7 @@ export function useDirections(
   useEffect(() => {
     const ranked = rankQuery.data;
 
-    if (!ranked) {
+    if (preferFastestRoute || !ranked) {
       return;
     }
 
@@ -230,7 +236,7 @@ export function useDirections(
     }, 0);
 
     return () => window.clearTimeout(syncRankedRoute);
-  }, [mapboxRoutes, rankQuery.data]);
+  }, [mapboxRoutes, preferFastestRoute, rankQuery.data]);
 
   useEffect(() => {
     if (!rankQuery.error) {

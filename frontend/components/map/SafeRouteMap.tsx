@@ -108,8 +108,7 @@ export function SafeRouteMap() {
   const [selectedSafeSpotId, setSelectedSafeSpotId] = useState<string | null>(
     null,
   );
-  const [shouldStartSafeRoute, setShouldStartSafeRoute] = useState(false);
-  const [shouldAutoStartRoute, setShouldAutoStartRoute] = useState(false);
+  const [isSafetyRoute, setIsSafetyRoute] = useState(false);
   const lastSafeSpotOriginRef = useRef<Coordinates | null>(null);
   const lastLocationAccuracyRef = useRef(Number.POSITIVE_INFINITY);
 
@@ -131,7 +130,7 @@ export function SafeRouteMap() {
     isLoading,
     error,
     selectRouteByIndex,
-  } = useDirections(origin, destination, profile, draftWeights);
+  } = useDirections(origin, destination, profile, draftWeights, isSafetyRoute);
   const { safeSpots, isLoadingSafeSpots, safeSpotsError, findSafeSpots } =
     useSafeSpots();
   const activeRoute = origin && destination && route ? route : null;
@@ -162,7 +161,7 @@ export function SafeRouteMap() {
   const showPinMarkers = mapZoom >= PIN_MARKER_MIN_ZOOM;
 
   useEffect(() => {
-    if (activeRoute && sheetState !== "navigating" && !shouldStartSafeRoute) {
+    if (activeRoute && sheetState !== "navigating") {
       const previewTransition = window.setTimeout(() => {
         setSheetState("preview");
       }, 0);
@@ -171,7 +170,7 @@ export function SafeRouteMap() {
     }
 
     return undefined;
-  }, [activeRoute, sheetState, shouldStartSafeRoute]);
+  }, [activeRoute, sheetState]);
 
   useEffect(() => {
     if (
@@ -261,8 +260,7 @@ export function SafeRouteMap() {
     setDestination(result.center);
     setDestinationLabel(result.place_name);
     setSelectedSafeSpotId(null);
-    setShouldStartSafeRoute(false);
-    setShouldAutoStartRoute(false);
+    setIsSafetyRoute(false);
   }
 
   const handleDestinationLabelChange = useCallback((value: string) => {
@@ -272,7 +270,7 @@ export function SafeRouteMap() {
       setDestination(null);
       setSheetState("idle");
       setSelectedSafeSpotId(null);
-      setShouldStartSafeRoute(false);
+      setIsSafetyRoute(false);
     }
   }, []);
 
@@ -280,8 +278,7 @@ export function SafeRouteMap() {
     (coordinates: Coordinates | null) => {
       setDestination(coordinates);
       setSelectedSafeSpotId(null);
-      setShouldStartSafeRoute(false);
-      setShouldAutoStartRoute(false);
+      setIsSafetyRoute(false);
 
       if (!coordinates) {
         setSheetState("idle");
@@ -422,90 +419,38 @@ export function SafeRouteMap() {
   const handleSafetyRoute = useCallback(async () => {
     try {
       setLocationError(null);
-      setShouldStartSafeRoute(false);
-      setProfile("walking");
-      void navigation.prepareCompassTracking();
       const currentOrigin = origin ?? (await requestCurrentLocation());
       const nearbySafeSpots = await findSafeSpots(currentOrigin);
-      const closestSafeSpot = nearbySafeSpots[0];
 
-      if (!closestSafeSpot) {
+      if (nearbySafeSpots.length === 0) {
         setLocationError("No nearby safe spots were found.");
         return;
       }
 
+      const closestSafeSpot = nearbySafeSpots.reduce(
+        (closest, spot) =>
+          calculateDistance(currentOrigin, spot.coordinates) <
+          calculateDistance(currentOrigin, closest.coordinates)
+            ? spot
+            : closest,
+        nearbySafeSpots[0]!,
+      );
+
       setOrigin(currentOrigin);
+      setIsSafetyRoute(true);
       setSelectedSafeSpotId(closestSafeSpot.id);
       setDestination(closestSafeSpot.coordinates);
       setDestinationLabel(`Safety Route: ${closestSafeSpot.name}`);
       setSheetState("preview");
-      setShouldStartSafeRoute(true);
     } catch (safeRouteError) {
-      setShouldStartSafeRoute(false);
+      setIsSafetyRoute(false);
       setLocationError(
         safeRouteError instanceof Error
           ? safeRouteError.message
           : "Could not start a safety route.",
       );
     }
-  }, [findSafeSpots, navigation, origin, requestCurrentLocation]);
-
-  useEffect(() => {
-    if (!shouldStartSafeRoute || isLoading || !activeRoute || routeError) {
-      return;
-    }
-
-    const startSafetyRoute = window.setTimeout(() => {
-      handleStartJourney();
-      setShouldStartSafeRoute(false);
-    }, 0);
-
-    return () => window.clearTimeout(startSafetyRoute);
-  }, [
-    activeRoute,
-    handleStartJourney,
-    isLoading,
-    routeError,
-    shouldStartSafeRoute,
-  ]);
-
-  useEffect(() => {
-    if (
-      !shouldAutoStartRoute ||
-      shouldStartSafeRoute ||
-      isLoading ||
-      !activeRoute ||
-      routeError
-    ) {
-      return;
-    }
-
-    const autoStartRoute = window.setTimeout(() => {
-      handleStartJourney();
-      setShouldAutoStartRoute(false);
-    }, 0);
-
-    return () => window.clearTimeout(autoStartRoute);
-  }, [
-    activeRoute,
-    handleStartJourney,
-    isLoading,
-    routeError,
-    shouldAutoStartRoute,
-    shouldStartSafeRoute,
-  ]);
-
-  useEffect(() => {
-    if (shouldStartSafeRoute && routeError) {
-      const resetSafetyRoute = window.setTimeout(() => {
-        setShouldStartSafeRoute(false);
-      }, 0);
-
-      return () => window.clearTimeout(resetSafetyRoute);
-    }
-
-    return undefined;
-  }, [routeError, shouldStartSafeRoute]);
+  }, [findSafeSpots, origin, requestCurrentLocation]);
 
   const recenterOnUser = useCallback(() => {
     if (sheetState === "navigating" && navigation.position) {
@@ -561,7 +506,7 @@ export function SafeRouteMap() {
     setDestination(null);
     setDestinationLabel("");
     setSelectedSafeSpotId(null);
-    setShouldStartSafeRoute(false);
+    setIsSafetyRoute(false);
 
     if (currentCoordinates) {
       setOrigin(currentCoordinates);
