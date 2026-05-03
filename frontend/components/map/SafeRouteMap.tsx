@@ -39,6 +39,7 @@ import { HeatmapLayer } from "../../components/map/HeatmapLayer";
 import { MarkerLayer } from "../../components/map/MarkerLayer";
 import { PinLayer } from "@/components/map/PinLayer";
 import { RouteLayer } from "@/components/map/RouteLayer";
+import { AppTutorial } from "@/components/ui/AppTutorial";
 import { LayerToggles } from "@/components/ui/LayerToggles";
 import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
 import { NavigationBar } from "@/components/ui/NavigationBar";
@@ -716,6 +717,11 @@ export function SafeRouteMap() {
         isSafetyRouteLoading={isLoadingSafeSpots || isLocating}
         safeSpotsEnabled={safeSpotsEnabled}
         onSafeSpotsEnabledChange={setSafeSpotsEnabled}
+      />
+
+      <AppTutorial
+        enabled={sessionStatus === "authenticated"}
+        userKey={session?.user?.email ?? session?.user?.name ?? null}
       />
     </main>
   );
