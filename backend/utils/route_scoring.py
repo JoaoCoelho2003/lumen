@@ -263,19 +263,24 @@ class LightFirstRouteScorer:
 
         effective_light_weight = light_weight if effective_is_night else 0.0
         if not effective_is_night:
-            notes.append("daytime detected; light_weight disabled for scoring")
+            notes.append("Daylight mode: street lighting is not used while ranking this route.")
 
         duration_value = float(duration_minutes) if duration_minutes is not None else None
         duration_penalty = duration_value if duration_value is not None else 0.0
         crime_penalty = crime_density_per_km * crime_weight
 
-        score = (
-            coverage * 100.0 * effective_light_weight
-            + min(light_density_per_km, 25.0) * 1.5 * effective_light_weight
-            - duration_penalty
-            - longest_dark_run_ratio * 80.0 * effective_light_weight
-            - crime_penalty
-        )
+        if effective_is_night:
+            score = (
+                coverage * 100.0 * effective_light_weight
+                + min(light_density_per_km, 25.0) * 1.5 * effective_light_weight
+                - duration_penalty
+                - longest_dark_run_ratio * 80.0 * effective_light_weight
+                - crime_penalty
+            )
+        else:
+            # In daylight, lighting should be neutral rather than turning every
+            # route into a negative score. Keep duration and crime meaningful.
+            score = 35.0 - min(duration_penalty, 60.0) * 0.8 - crime_penalty
         score_percent = _score_to_percent(score)
 
         return RouteScoreResult(

@@ -62,6 +62,7 @@ type MapBottomDrawerProps = {
   hasPendingWeightChanges: boolean;
   crowdPresenceEnabled: boolean;
   isSharingCrowdPresence: boolean;
+  isDaytime: boolean;
   distanceRemaining: number;
   durationRemaining: number;
   activeStepIndex: number;
@@ -103,6 +104,7 @@ type SettingsPanelProps = {
   safeSpotsEnabled: boolean;
   crowdPresenceEnabled: boolean;
   isSharingCrowdPresence: boolean;
+  isDaytime: boolean;
   onSafeSpotsEnabledChange: (enabled: boolean) => void;
   onCrowdPresenceEnabledChange: (enabled: boolean) => void;
   onLightWeightChange: (value: number) => void;
@@ -119,6 +121,7 @@ function SettingsPanel({
   safeSpotsEnabled,
   crowdPresenceEnabled,
   isSharingCrowdPresence,
+  isDaytime,
   onSafeSpotsEnabledChange,
   onCrowdPresenceEnabledChange,
   onLightWeightChange,
@@ -179,9 +182,18 @@ function SettingsPanel({
       <div className="rounded-lg border border-border/60 bg-background/40 px-3 py-3">
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-sm font-medium text-foreground">Light weight</p>
+            <p className="text-sm font-medium text-foreground">
+              Light weight
+              {isDaytime ? (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  Night only
+                </span>
+              ) : null}
+            </p>
             <p className="text-xs text-muted-foreground">
-              Influence for low-light segments
+              {isDaytime
+                ? "Daylight is active, so street lighting is not used for scoring"
+                : "Influence for low-light segments"}
             </p>
           </div>
           <span className="text-xs font-semibold text-foreground">
@@ -193,6 +205,7 @@ function SettingsPanel({
             value={[weights.light_weight * 100]}
             min={0}
             max={100}
+            disabled={isDaytime}
             onValueChange={([value]) => onLightWeightChange(value / 100)}
           />
         </div>
@@ -232,6 +245,14 @@ function SettingsPanel({
       </div>
     </div>
   );
+}
+
+function formatRouteNote(note: string) {
+  if (note.toLowerCase().includes("daytime detected")) {
+    return "Daylight mode: street lighting is not used while ranking this route.";
+  }
+
+  return note;
 }
 
 type RoutePanelProps = {
@@ -309,7 +330,7 @@ function RoutePanel({
           </div>
           {selectedCandidate.notes[0] ? (
             <p className="mt-3 rounded-md bg-background/50 px-2 py-2 text-xs text-muted-foreground">
-              {selectedCandidate.notes[0]}
+              {formatRouteNote(selectedCandidate.notes[0])}
             </p>
           ) : null}
         </div>
@@ -414,6 +435,7 @@ export function MapBottomDrawer({
   hasPendingWeightChanges,
   crowdPresenceEnabled,
   isSharingCrowdPresence,
+  isDaytime,
   distanceRemaining,
   durationRemaining,
   activeStepIndex,
@@ -544,6 +566,7 @@ export function MapBottomDrawer({
                     safeSpotsEnabled={safeSpotsEnabled}
                     crowdPresenceEnabled={crowdPresenceEnabled}
                     isSharingCrowdPresence={isSharingCrowdPresence}
+                    isDaytime={isDaytime}
                     onSafeSpotsEnabledChange={onSafeSpotsEnabledChange}
                     onCrowdPresenceEnabledChange={onCrowdPresenceEnabledChange}
                     onLightWeightChange={onLightWeightChange}
