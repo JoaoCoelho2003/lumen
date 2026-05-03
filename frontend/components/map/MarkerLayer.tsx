@@ -1,6 +1,13 @@
 "use client";
 
-import { Flame, Hospital, MapPin, Navigation, ShieldCheck, Users } from "lucide-react";
+import {
+  Flame,
+  Hospital,
+  MapPin,
+  Navigation,
+  ShieldCheck,
+  Users,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 import { Marker } from "react-map-gl";
 import type { Coordinates, NavigationPosition, SafeSpot } from "@/lib/types";
@@ -55,10 +62,10 @@ function SafeSpotMarker({
     safeSpot.kind === "crowd"
       ? Users
       : safeSpot.kind === "fire"
-      ? Flame
-      : safeSpot.kind === "hospital"
-        ? Hospital
-        : ShieldCheck;
+        ? Flame
+        : safeSpot.kind === "hospital"
+          ? Hospital
+          : ShieldCheck;
 
   useEffect(() => {
     const transitionDelay = window.setTimeout(() => {

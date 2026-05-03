@@ -27,7 +27,11 @@ export default function RegisterPage() {
     }
 
     try {
-      await registerMutation.mutateAsync({ username, password, confirmPassword });
+      await registerMutation.mutateAsync({
+        username,
+        password,
+        confirmPassword,
+      });
       router.replace("/login");
     } catch (err) {
       setError(
@@ -55,7 +59,10 @@ export default function RegisterPage() {
     >
       <form onSubmit={handleSubmit} method="POST" className="space-y-4">
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground" htmlFor="username">
+          <label
+            className="text-sm font-medium text-foreground"
+            htmlFor="username"
+          >
             Username
           </label>
           <input
@@ -69,7 +76,10 @@ export default function RegisterPage() {
         </div>
 
         <div className="space-y-2">
-          <label className="text-sm font-medium text-foreground" htmlFor="password">
+          <label
+            className="text-sm font-medium text-foreground"
+            htmlFor="password"
+          >
             Password
           </label>
           <input

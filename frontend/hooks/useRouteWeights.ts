@@ -3,10 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useUpdateRouteWeightsMutation } from "@/app/api/mutations/routes";
 import { useRouteWeightsQuery } from "@/app/api/queries/routes";
-import {
-  DEFAULT_ROUTE_WEIGHTS,
-  normalizeRouteWeights,
-} from "@/app/api/routes";
+import { DEFAULT_ROUTE_WEIGHTS, normalizeRouteWeights } from "@/app/api/routes";
 import type { RouteWeights } from "../lib/types";
 
 type RouteWeightsState = {

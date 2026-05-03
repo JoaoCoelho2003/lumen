@@ -31,11 +31,16 @@ export async function sendCrowdHeartbeat({
   });
 }
 
-export async function getCrowdSafeSpots(origin: Coordinates): Promise<SafeSpot[]> {
+export async function getCrowdSafeSpots(
+  origin: Coordinates,
+): Promise<SafeSpot[]> {
   const [longitude, latitude] = origin;
-  const response = await api.get<CrowdSafeSpotResponse[]>("/crowds/safe-spots", {
-    params: { latitude, longitude },
-  });
+  const response = await api.get<CrowdSafeSpotResponse[]>(
+    "/crowds/safe-spots",
+    {
+      params: { latitude, longitude },
+    },
+  );
 
   return response.data;
 }

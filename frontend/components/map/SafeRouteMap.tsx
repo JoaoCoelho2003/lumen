@@ -93,7 +93,10 @@ export function SafeRouteMap() {
   const [isFocusedOnUser, setIsFocusedOnUser] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
-  const [pinFeedback, setPinFeedback] = useState<{ ok: boolean; msg: string } | null>(null);
+  const [pinFeedback, setPinFeedback] = useState<{
+    ok: boolean;
+    msg: string;
+  } | null>(null);
   const [pinDrawerOpen, setPinDrawerOpen] = useState(false);
 
   const { data: session, status: sessionStatus } = useSession();
@@ -129,12 +132,7 @@ export function SafeRouteMap() {
     isLoading,
     error,
     selectRouteByIndex,
-  } = useDirections(
-    origin,
-    destination,
-    profile,
-    weights,
-  );
+  } = useDirections(origin, destination, profile, weights);
   const { safeSpots, isLoadingSafeSpots, safeSpotsError, findSafeSpots } =
     useSafeSpots();
   const activeRoute = origin && destination && route ? route : null;
@@ -151,14 +149,15 @@ export function SafeRouteMap() {
   const mapStyle = satelliteEnabled
     ? MAP_STYLES.satellite
     : getTimeBasedMapStyle(portugalHour);
-  
+
   const durationRemaining = activeRoute
     ? (navigation.distanceRemaining / Math.max(activeRoute.distance, 1)) *
       activeRoute.duration
     : 0;
   const routeError = navigation.error ?? error ?? safeSpotsError;
   const showSafeSpotMarkers =
-    safeSpotsEnabled && (mapZoom >= SAFE_SPOT_MARKER_MIN_ZOOM || Boolean(selectedSafeSpotId));
+    safeSpotsEnabled &&
+    (mapZoom >= SAFE_SPOT_MARKER_MIN_ZOOM || Boolean(selectedSafeSpotId));
   const showPinMarkers = mapZoom >= PIN_MARKER_MIN_ZOOM;
 
   useEffect(() => {
@@ -246,7 +245,10 @@ export function SafeRouteMap() {
 
     const lastSafeSpotOrigin = lastSafeSpotOriginRef.current;
 
-    if (lastSafeSpotOrigin && calculateDistance(lastSafeSpotOrigin, origin) < 50) {
+    if (
+      lastSafeSpotOrigin &&
+      calculateDistance(lastSafeSpotOrigin, origin) < 50
+    ) {
       return;
     }
 
@@ -387,7 +389,8 @@ export function SafeRouteMap() {
         refineCurrentLocation();
       };
       const rejectWithMessage = () => {
-        const message = "Could not get your location. Check browser permissions.";
+        const message =
+          "Could not get your location. Check browser permissions.";
 
         if (!settled) {
           settled = true;
@@ -534,12 +537,18 @@ export function SafeRouteMap() {
       return;
     }
 
-    const coords: Coordinates =
-      origin ?? (mapRef.current ? [mapRef.current.getCenter().lng, mapRef.current.getCenter().lat] : null) ?? [0, 0];
+    const coords: Coordinates = origin ??
+      (mapRef.current
+        ? [mapRef.current.getCenter().lng, mapRef.current.getCenter().lat]
+        : null) ?? [0, 0];
 
     const ok = await addPin(coords, tag.value as PinType, userId);
     setPinDrawerOpen(false);
-    setPinFeedback(ok ? { ok: true, msg: "Pin submitted!" } : { ok: false, msg: "Failed to save pin." });
+    setPinFeedback(
+      ok
+        ? { ok: true, msg: "Pin submitted!" }
+        : { ok: false, msg: "Failed to save pin." },
+    );
     window.setTimeout(() => setPinFeedback(null), 3000);
   }
 

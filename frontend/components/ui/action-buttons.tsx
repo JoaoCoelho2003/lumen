@@ -74,8 +74,8 @@ export function ActionButtons({
               </AlertDialogMedia>
               <AlertDialogTitle>Start safety routing?</AlertDialogTitle>
               <AlertDialogDescription>
-                We will find the closest safe spot near you and start
-                navigation there.
+                We will find the closest safe spot near you and start navigation
+                there.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
