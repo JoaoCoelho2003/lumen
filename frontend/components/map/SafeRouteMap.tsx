@@ -42,7 +42,6 @@ import { PinLayer } from "@/components/map/PinLayer";
 import { RouteLayer } from "@/components/map/RouteLayer";
 import { LayerToggles } from "@/components/ui/LayerToggles";
 import { MapBottomDrawer } from "@/components/ui/MapBottomDrawer";
-import { NavigationBar } from "@/components/ui/NavigationBar";
 import { PinTags } from "@/components/ui/PinTags";
 import { RightSideDrawer } from "@/components/ui/RightSideDrawer";
 import { useSafeSpots } from "@/app/api/queries/safe-spots";
