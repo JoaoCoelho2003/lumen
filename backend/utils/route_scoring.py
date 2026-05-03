@@ -19,6 +19,9 @@ except Exception:
 import geopandas as gpd
 from shapely.geometry import LineString
 
+HIGH_CRIME_SCORE_THRESHOLD = 0.3
+HIGH_CRIME_TOUCH_THRESHOLD_M = 25.0
+
 
 def _dedupe_consecutive_coordinates(coordinates: Sequence[Sequence[float]]) -> List[List[float]]:
     cleaned: List[List[float]] = []
@@ -47,6 +50,33 @@ def _score_to_percent(score: float) -> float:
     return round(100.0 / (1.0 + math.exp(-score / 20.0)), 2)
 
 
+def _crime_score_from_row(row: Any) -> float:
+    raw_score = getattr(row, "crime_score", None)
+    if raw_score is not None:
+        try:
+            return max(0.0, min(float(raw_score), 1.0))
+        except (TypeError, ValueError):
+            pass
+
+    crime_level = str(getattr(row, "crime_level", "") or "").lower()
+    if crime_level == "alto":
+        return 0.75
+    if crime_level == "medio":
+        return 0.45
+    if crime_level == "baixo":
+        return 0.12
+
+    return 0.0
+
+
+def _is_high_risk_crime_row(row: Any) -> bool:
+    crime_level = str(getattr(row, "crime_level", "") or "").lower()
+    if crime_level in {"medio", "alto"}:
+        return True
+
+    return _crime_score_from_row(row) >= HIGH_CRIME_SCORE_THRESHOLD
+
+
 def _union_geometry(frame: gpd.GeoDataFrame):
     if frame is None or frame.empty:
         return None
@@ -67,6 +97,8 @@ class RouteScoreResult:
     longest_dark_run_ratio: float
     light_points_near_route: int
     crime_points_near_route: int
+    high_crime_segments_near_route: int
+    high_crime_overlap_m: float
     light_density_per_km: float
     crime_density_per_km: float
     distance_km: float
@@ -206,14 +238,62 @@ class LightFirstRouteScorer:
 
         if self._crimes is not None and not self._crimes.empty and self._crime_union is not None:
             crime_buffer = route_line.buffer(light_buffer_m)
-            crime_points_near_route = int(self._crimes[self._crimes.geometry.within(crime_buffer)].shape[0])
+            crimes_near_route = self._crimes[self._crimes.geometry.intersects(crime_buffer)]
+            crime_points_near_route = int(crimes_near_route.shape[0])
         else:
+            crimes_near_route = None
             crime_points_near_route = 0
 
         light_density_per_km = light_points_near_route / route_distance_km
         crime_density_per_km = crime_points_near_route / route_distance_km
+        weighted_crime_length_m = 0.0
+        high_crime_length_m = 0.0
+        high_crime_segments_near_route = 0
+        max_crime_score = 0.0
 
-        # determine day/night using timezone and solar times when available
+        if crimes_near_route is not None and not crimes_near_route.empty:
+            for crime in crimes_near_route.itertuples():
+                crime_geometry = getattr(crime, "geometry", None)
+                if crime_geometry is None or crime_geometry.is_empty:
+                    continue
+
+                overlap = crime_geometry.intersection(crime_buffer)
+                overlap_length_m = float(getattr(overlap, "length", 0.0) or 0.0)
+                if overlap_length_m <= 0:
+                    continue
+
+                crime_score = _crime_score_from_row(crime)
+                max_crime_score = max(max_crime_score, crime_score)
+                weighted_crime_length_m += overlap_length_m * crime_score
+
+                if _is_high_risk_crime_row(crime):
+                    high_crime_segments_near_route += 1
+                    high_crime_length_m += overlap_length_m
+
+        route_length_for_ratio_m = max(route_length_m, 1.0)
+        weighted_crime_exposure_ratio = min(
+            weighted_crime_length_m / route_length_for_ratio_m,
+            2.0,
+        )
+        high_crime_overlap_ratio = min(
+            high_crime_length_m / route_length_for_ratio_m,
+            1.0,
+        )
+
+        if high_crime_length_m >= HIGH_CRIME_TOUCH_THRESHOLD_M:
+            if crime_weight >= 0.95:
+                notes.append(
+                    "High-risk streets remain on this route even with maximum crime avoidance; available alternatives may not provide a cleaner detour."
+                )
+            elif crime_weight > 0:
+                notes.append(
+                    "High-risk streets detected on this route; increase crime weight to avoid them when alternatives exist."
+                )
+            else:
+                notes.append(
+                    "High-risk streets detected on this route; crime avoidance is currently turned off."
+                )
+
         centroid = route_line_wgs84.centroid
         lon = float(centroid.x)
         lat = float(centroid.y)
@@ -230,18 +310,15 @@ class LightFirstRouteScorer:
                         sunrise = s.get("sunrise")
                         sunset = s.get("sunset")
                         if sunrise is None or sunset is None:
-                            # fallback to longitude heuristic
                             raise ValueError("sunrise/sunset not available")
                         effective_is_night = (local_dt < sunrise) or (local_dt >= sunset)
                     except Exception:
-                        # fallback to longitude-based heuristic if any local calculation fails
                         utc_hour = datetime.utcnow().hour
                         tz_offset = int(round(lon / 15.0))
                         local_hour = (utc_hour + tz_offset) % 24
                         effective_is_night = (local_hour < 6) or (local_hour >= 19)
                         notes.append("fallback: used longitude heuristic for day/night detection")
                 else:
-                    # couldn't resolve timezone name; fallback
                     utc_hour = datetime.utcnow().hour
                     tz_offset = int(round(lon / 15.0))
                     local_hour = (utc_hour + tz_offset) % 24
@@ -254,7 +331,6 @@ class LightFirstRouteScorer:
                 effective_is_night = (local_hour < 6) or (local_hour >= 19)
                 notes.append("fallback: error during timezone/sun calculation; used longitude heuristic")
         else:
-            # timezone/sun libraries unavailable; approximate by longitude
             utc_hour = datetime.utcnow().hour
             tz_offset = int(round(lon / 15.0))
             local_hour = (utc_hour + tz_offset) % 24
@@ -267,7 +343,16 @@ class LightFirstRouteScorer:
 
         duration_value = float(duration_minutes) if duration_minutes is not None else None
         duration_penalty = duration_value if duration_value is not None else 0.0
-        crime_penalty = crime_density_per_km * crime_weight
+        high_crime_touch_penalty = (
+            80.0 if high_crime_length_m >= HIGH_CRIME_TOUCH_THRESHOLD_M else 0.0
+        )
+        crime_penalty = crime_weight * (
+            crime_density_per_km * 2.0
+            + weighted_crime_exposure_ratio * 140.0
+            + high_crime_overlap_ratio * 420.0
+            + max(0.0, max_crime_score - HIGH_CRIME_SCORE_THRESHOLD) * 90.0
+            + high_crime_touch_penalty
+        )
 
         if effective_is_night:
             score = (
@@ -278,8 +363,6 @@ class LightFirstRouteScorer:
                 - crime_penalty
             )
         else:
-            # In daylight, lighting should be neutral rather than turning every
-            # route into a negative score. Keep duration and crime meaningful.
             score = 35.0 - min(duration_penalty, 60.0) * 0.8 - crime_penalty
         score_percent = _score_to_percent(score)
 
@@ -291,6 +374,8 @@ class LightFirstRouteScorer:
             longest_dark_run_ratio=longest_dark_run_ratio,
             light_points_near_route=light_points_near_route,
             crime_points_near_route=crime_points_near_route,
+            high_crime_segments_near_route=high_crime_segments_near_route,
+            high_crime_overlap_m=round(high_crime_length_m, 1),
             light_density_per_km=light_density_per_km,
             crime_density_per_km=crime_density_per_km,
             distance_km=route_distance_km,

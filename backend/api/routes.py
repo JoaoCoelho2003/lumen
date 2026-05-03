@@ -52,6 +52,8 @@ class RouteScoreResponse(BaseModel):
     longest_dark_run_ratio: float
     light_points_near_route: int
     crime_points_near_route: int
+    high_crime_segments_near_route: int
+    high_crime_overlap_m: float
     light_density_per_km: float
     crime_density_per_km: float
     distance_km: float

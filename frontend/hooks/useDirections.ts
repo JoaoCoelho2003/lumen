@@ -14,6 +14,38 @@ import type {
   TravelProfile,
 } from "../lib/types";
 
+const MAX_RANKED_ROUTES = 10;
+const DIVERSIFIED_ROUTE_OFFSETS_METERS = [350, -350, 700, -700];
+
+function offsetCoordinate(
+  origin: Coordinates,
+  destination: Coordinates,
+  offsetMeters: number,
+): Coordinates {
+  const midLng = (origin[0] + destination[0]) / 2;
+  const midLat = (origin[1] + destination[1]) / 2;
+  const dx = destination[0] - origin[0];
+  const dy = destination[1] - origin[1];
+  const length = Math.sqrt(dx * dx + dy * dy) || 1;
+  const perpendicularLng = -dy / length;
+  const perpendicularLat = dx / length;
+  const metersPerDegreeLat = 111_320;
+  const metersPerDegreeLng =
+    metersPerDegreeLat * Math.max(Math.cos((midLat * Math.PI) / 180), 0.2);
+
+  return [
+    midLng + (perpendicularLng * offsetMeters) / metersPerDegreeLng,
+    midLat + (perpendicularLat * offsetMeters) / metersPerDegreeLat,
+  ];
+}
+
+function routeKey(route: MapboxDirectionsRoute) {
+  return route.geometry.coordinates
+    .filter((_, index) => index % 8 === 0)
+    .map(([lng, lat]) => `${lng.toFixed(5)},${lat.toFixed(5)}`)
+    .join("|");
+}
+
 type DirectionsState = {
   route: Route | null;
   rankedRoutes: RankedRoute[];
@@ -86,32 +118,61 @@ export function useDirections(
       setError(null);
 
       try {
-        const coordinates = `${currentOrigin[0]},${currentOrigin[1]};${currentDestination[0]},${currentDestination[1]}`;
-        const params = new URLSearchParams({
-          geometries: "geojson",
-          steps: "true",
-          overview: "full",
-          alternatives: "true",
-          access_token: MAPBOX_TOKEN,
-          language: "pt",
-        });
-        const response = await fetch(
-          `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordinates}?${params.toString()}`,
-          { signal: controller.signal },
-        );
-        const data = (await response.json()) as MapboxDirectionsResponse;
+        async function fetchDirections(coordinates: string, alternatives: boolean) {
+          const params = new URLSearchParams({
+            geometries: "geojson",
+            steps: "true",
+            overview: "full",
+            alternatives: alternatives ? "true" : "false",
+            access_token: MAPBOX_TOKEN,
+            language: "pt",
+          });
+          const response = await fetch(
+            `https://api.mapbox.com/directions/v5/mapbox/${profile}/${coordinates}?${params.toString()}`,
+            { signal: controller.signal },
+          );
+          const data = (await response.json()) as MapboxDirectionsResponse;
 
-        if (!response.ok) {
-          throw new Error(data.message ?? "Could not calculate the route.");
+          if (!response.ok) {
+            throw new Error(data.message ?? "Could not calculate the route.");
+          }
+
+          return data.routes ?? [];
         }
 
-        const firstRoute = data.routes?.[0];
+        const directCoordinates = `${currentOrigin[0]},${currentOrigin[1]};${currentDestination[0]},${currentDestination[1]}`;
+        const directRoutes = await fetchDirections(directCoordinates, true);
+        const detourRouteGroups = await Promise.all(
+          DIVERSIFIED_ROUTE_OFFSETS_METERS.map((offsetMeters) => {
+            const waypoint = offsetCoordinate(
+              currentOrigin,
+              currentDestination,
+              offsetMeters,
+            );
+            const coordinates = `${currentOrigin[0]},${currentOrigin[1]};${waypoint[0]},${waypoint[1]};${currentDestination[0]},${currentDestination[1]}`;
+            return fetchDirections(coordinates, false).catch(() => []);
+          }),
+        );
+        const allRoutes = [...directRoutes, ...detourRouteGroups.flat()];
+
+        const firstRoute = allRoutes[0];
 
         if (!firstRoute) {
           throw new Error("No route found for those locations.");
         }
 
-        const nextRoutes = (data.routes ?? []).slice(0, 3);
+        const seenRouteKeys = new Set<string>();
+        const nextRoutes = allRoutes
+          .filter((candidate) => {
+            const key = routeKey(candidate);
+            if (seenRouteKeys.has(key)) {
+              return false;
+            }
+
+            seenRouteKeys.add(key);
+            return true;
+          })
+          .slice(0, MAX_RANKED_ROUTES);
 
         setMapboxRoutes(nextRoutes);
         setRankedRoutes([]);

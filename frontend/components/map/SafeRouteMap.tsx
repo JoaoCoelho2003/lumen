@@ -111,7 +111,6 @@ export function SafeRouteMap() {
   const lastLocationAccuracyRef = useRef(Number.POSITIVE_INFINITY);
 
   const {
-    weights,
     draftWeights,
     isLoading: isWeightsLoading,
     isSaving: isWeightsSaving,
@@ -133,7 +132,7 @@ export function SafeRouteMap() {
     origin,
     destination,
     profile,
-    weights,
+    draftWeights,
   );
   const { safeSpots, isLoadingSafeSpots, safeSpotsError, findSafeSpots } =
     useSafeSpots();

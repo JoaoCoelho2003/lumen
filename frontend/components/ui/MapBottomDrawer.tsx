@@ -316,9 +316,9 @@ function RoutePanel({
               </p>
             </div>
             <div>
-              <p className="text-muted-foreground">Crime reports</p>
+              <p className="text-muted-foreground">Red streets</p>
               <p className="font-semibold text-foreground">
-                {selectedCandidate.crime_points_near_route}
+                {selectedCandidate.high_crime_segments_near_route}
               </p>
             </div>
             <div>
@@ -341,7 +341,7 @@ function RoutePanel({
           <p className="px-1 text-xs font-semibold uppercase text-muted-foreground">
             Alternatives
           </p>
-          {rankedRoutes.slice(0, 5).map((candidate, index) => {
+          {rankedRoutes.slice(0, 3).map((candidate, index) => {
             const sourceIndex = candidate.source_route_index ?? index;
             const isSelected = selectedRouteIndex === sourceIndex;
 
@@ -363,7 +363,7 @@ function RoutePanel({
                   <p className="mt-0.5 text-xs text-muted-foreground">
                     {candidate.distance_km.toFixed(1)} km ·{" "}
                     {formatPercent(candidate.coverage)} lighting ·{" "}
-                    {candidate.crime_points_near_route} reports
+                    {candidate.high_crime_segments_near_route} red streets
                   </p>
                 </div>
                 <span className="shrink-0 text-sm font-semibold text-primary">
