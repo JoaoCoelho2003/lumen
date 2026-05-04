@@ -1,4 +1,4 @@
-# Lumen
+![Lumen card](public/card.png)
 
 **Lumen** is a pedestrian-first safety navigation app for Portugal's urban population. Instead of optimising for speed alone, Lumen scores every route using a **Safety Score** built on three independent data layers: official crime statistics (RASI/INE), street lighting infrastructure, and real-time community reports. Features include Safety Clusters (aggregate presence of nearby users) and Safe Places (one-tap access to the nearest police stations, 24h pharmacies, and hospitals).
 
